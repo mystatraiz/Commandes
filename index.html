@@ -168,24 +168,36 @@ th.c1,td.c1{background:var(--c1);color:#fff}th.c2,td.c2{background:var(--c2);col
   }
 })();
 </script>
-    <!-- ... ton code existant ... -->
+    <script>
+function resizeApp() {
+  const app = document.body; // ou un #app si tu veux cibler juste un bloc
+  const w = app.scrollWidth;
+  const h = app.scrollHeight;
 
-  <script>
-  function resizeApp() {
-    const app = document.body; // ou document.getElementById('app') si tu encadres ton contenu
-    const w = app.scrollWidth;
-    const h = app.scrollHeight;
-    const scale = Math.min(window.innerWidth / w, window.innerHeight / h, 1);
-    app.style.transform = `scale(${scale})`;
-    app.style.transformOrigin = "top left";
-    app.style.width = w + "px";
-    app.style.height = h + "px";
-  }
+  // Calcul du scale pour tout faire tenir
+  const scale = Math.min(window.innerWidth / w, window.innerHeight / h, 1);
 
-  window.addEventListener("resize", resizeApp);
-  window.addEventListener("orientationchange", resizeApp);
-  window.addEventListener("load", resizeApp);
-  </script>
+  // On applique le scale
+  app.style.transform = `scale(${scale})`;
+  app.style.transformOrigin = "center center";
+
+  // On force le body à utiliser flex pour centrer
+  document.documentElement.style.height = "100%";
+  document.body.style.height = "100%";
+  document.body.style.display = "flex";
+  document.body.style.alignItems = "center";
+  document.body.style.justifyContent = "center";
+
+  // On fixe les dimensions "réelles" pour que le scale marche bien
+  app.style.width = w + "px";
+  app.style.height = h + "px";
+}
+
+window.addEventListener("resize", resizeApp);
+window.addEventListener("orientationchange", resizeApp);
+window.addEventListener("load", resizeApp);
+</script>
+
 </body>
 </html>
 
