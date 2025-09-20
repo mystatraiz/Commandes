@@ -1,0 +1,141 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#13314D"><link id="manifest-link" rel="manifest" href="#"><title>Gestion des Commandes</title><style>
+:root{--bgd:#081420;--bg:#13314D;--st:#1A2D3D;--ink:#ECDEAD;--brand:#BA914A;--mut:#446B88;--c1:#4D1B87;--c2:#ED330C;--c3:#E89F90;--c4:#825C52}
+*{box-sizing:border-box}
+html,body{height:100%;-ms-touch-action:manipulation;touch-action:manipulation}
+body{margin:0;padding:20px;font-family:Arial,sans-serif;background:var(--bgd);color:var(--ink)}
+.tabs{display:flex;gap:8px;margin:10px 0 16px}.tab{flex:1;text-align:center;border:1px solid var(--mut);background:transparent;color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}.tab[aria-selected="true"]{background:var(--brand);color:var(--bgd);border-color:transparent;font-weight:700}.panel{display:none}.panel.active{display:block}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;justify-content:center}
+.card{background:var(--bg);border:1px solid var(--st);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 6px 16px rgba(0,0,0,.2)}.center{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}.action{background:var(--brand);color:var(--bgd)}.danger{background:#d9534f;color:#fff}
+.table{border-collapse:separate;border-spacing:0;width:100%;background:var(--bg);border-radius:12px;overflow:hidden;margin-top:15px;table-layout:fixed}
+th{background:var(--mut);border:1px solid var(--st);padding:10px;text-align:center}
+tr{height:50px}
+td{border:1px solid var(--st);padding:0;text-align:center;cursor:pointer;user-select:none}
+th.c1,td.c1{background:var(--c1);color:#fff}th.c2,td.c2{background:var(--c2);color:#fff}th.c3,td.c3{background:var(--c3);color:#111}th.c4,td.c4{background:var(--c4);color:#fff}
+.cell{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:800;line-height:1;font-size:clamp(12px,4vw,22px);-webkit-user-select:none;user-select:none}
+.cell.name{justify-content:flex-start;padding-left:8px}
+.ticket-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}.ticket{background:#0f2336;border:1px solid var(--st);border-radius:12px;padding:12px;box-shadow:0 6px 16px rgba(0,0,0,.25)}.ticket header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.badge{background:var(--mut);border:1px solid var(--st);padding:2px 8px;border-radius:999px;font-size:12px}
+.select{padding:8px;border-radius:8px;border:1px solid var(--mut);background:var(--bg);color:var(--ink)}
+/* Modal sélection de table */
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:999}
+.hidden{display:none}
+.modal-card{background:var(--bg);border:1px solid var(--st);border-radius:12px;padding:16px;max-width:520px;width:92%}
+.modal-card h3{margin:0 0 12px;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+.table-option{padding:10px;border:1px solid var(--mut);background:transparent;color:var(--ink);border-radius:10px;cursor:pointer;font-weight:700}
+.modal-actions{display:flex;justify-content:flex-end;margin-top:12px}
+</style></head><body>
+<div class="tabs" role="tablist">
+  <button id="tab-table" class="tab" aria-selected="false">Table : --</button>
+  <button id="tab-s" class="tab" aria-selected="true">Saisie</button>
+  <button id="tab-t" class="tab" aria-selected="false">Tickets</button>
+</div>
+<section id="p-s" class="panel active">
+  <div class="topbar">
+    <button id="send" class="btn action">Envoyer la commande</button>
+    <button id="raz" class="btn danger">RAZ</button>
+  </div>
+  <div class="card"><div class="center"><button class="btn" data-pre="Côte de boeuf">Côte de boeuf: <span id="pre-co">0</span></button><button class="btn" data-pre="T-Bone">T-Bone: <span id="pre-tb">0</span></button><button class="btn" data-pre="Tomahawk">Tomahawk: <span id="pre-th">0</span></button></div></div>
+  <table class="table" id="cmd"><thead><tr><th>Viande</th><th class="c1">Bleu</th><th class="c2">Saignant</th><th class="c3">À Point</th><th class="c4">Bien Cuit</th></tr></thead><tbody id="tb"></tbody></table>
+</section>
+<section id="p-t" class="panel"><div class="card"><h2 style="margin:0">Tickets – Commandes en cours</h2><div id="tickets" class="ticket-list"></div></div></section>
+<!-- Modal de sélection de table -->
+<div id="table-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="table-modal-title">
+  <div class="modal-card">
+    <h3 id="table-modal-title">Sélectionner une table</h3>
+    <div class="grid" id="table-grid"></div>
+    <div class="modal-actions"><button id="table-cancel" class="btn">Annuler</button></div>
+  </div>
+</div>
+<script>
+(()=>{
+  const VIANDES=["Entrecôte","Côte de boeuf","Bavette","T-Bone","Tomahawk","Wagyu Noix","Wagyu Tomahawk","Wagyu Rib Cap","Wagyu Chateaubriand","1/2 Agneau","Gigot","1/2 Poulet","Magret"];
+  const CUIS=["Bleu","Saignant","À Point","Bien Cuit"]; const STK='gc_state_v1';
+  const TABLES=["1","2","3","4","5","55","6","7","8","9","11","12","14","15","16","17","18","19","21","22","23","24","25","30","31","32","33","34","35","36","37"];
+  const el=(s)=>document.querySelector(s), els=(s)=>[...document.querySelectorAll(s)];
+  const tb=el('#tb'), ticketsEl=el('#tickets');
+  const tableBtn=el('#tab-table');
+  const tableModal=el('#table-modal');
+  const tableGrid=el('#table-grid');
+  const tableCancel=el('#table-cancel');
+  let selectedTable="";
+
+  let data={}, timers=new Map();
+  let tickets=[], pre={"Côte de boeuf":0,"T-Bone":0,"Tomahawk":0};
+  const preRefs={"Côte de boeuf":el('#pre-co'),"T-Bone":el('#pre-tb'),"Tomahawk":el('#pre-th')};
+  const save=()=>localStorage.setItem(STK,JSON.stringify({tickets,pre,selectedTable}));
+  const load=()=>{try{const x=JSON.parse(localStorage.getItem(STK)||'{}');tickets=x.tickets||[];pre=Object.assign(pre,x.pre||{});selectedTable=x.selectedTable||"";if(selectedTable){tableBtn.textContent=`Table : ${selectedTable}`;}}catch{}};
+  const row=(v)=>`<tr><td><div class="cell name">${v}</div></td>${CUIS.map((c,i)=>`<td class="c${i+1}"><div class="cell" data-v="${v}" data-c="${c}">0</div></td>`).join('')}</tr>`;
+  const renderTable=()=>{tb.innerHTML=VIANDES.map(row).join('');data={};VIANDES.forEach(v=>data[v]={Bleu:0,Saignant:0,"À Point":0,"Bien Cuit":0});}
+  const renderTickets=()=>{ticketsEl.innerHTML=tickets.map(t=>`<div class="ticket"><header><div><strong>Table ${t.table}</strong> <span class="badge">${t.createdAt}</span></div><button class="btn action" data-done="${t.id}">Terminé</button></header><ul>${t.items.map(i=>`<li>${i.qty} × ${i.viande} – ${i.cuisson}</li>`).join('')}</ul></div>`).join('');};
+
+  // Onglets
+  const show=(p)=>{el('#p-s').classList.toggle('active',p==='s');el('#p-t').classList.toggle('active',p==='t');el('#tab-s').setAttribute('aria-selected',p==='s');el('#tab-t').setAttribute('aria-selected',p==='t');};
+  el('#tab-s').onclick=()=>show('s'); el('#tab-t').onclick=()=>show('t');
+
+  // Sélecteur de table (modale grille)
+  function openTableModal(){
+    tableGrid.innerHTML = TABLES.map(t=>`<button class="table-option" data-t="${t}">${t}</button>`).join('');
+    tableModal.classList.remove('hidden');
+  }
+  function closeTableModal(){ tableModal.classList.add('hidden'); }
+  tableBtn.onclick=()=>openTableModal();
+  tableCancel.onclick=()=>closeTableModal();
+  tableGrid.addEventListener('click',(e)=>{const b=e.target.closest('.table-option'); if(!b) return; selectedTable=b.dataset.t; tableBtn.textContent=`Table : ${selectedTable}`; save(); closeTableModal(); if(el('#tab-t').getAttribute('aria-selected')==='true'){ show('s'); }});
+  tableModal.addEventListener('click',(e)=>{ if(e.target===tableModal) closeTableModal(); });
+
+  // Interactions cellules
+  const start=(e)=>{const d=e.target.closest('.cell'); if(!d||!d.dataset.c) return; const key=d.dataset.v+"|"+d.dataset.c; timers.set(key,setTimeout(()=>{data[d.dataset.v][d.dataset.c]=0; d.textContent=0; timers.delete(key);},700));};
+  const end=(e)=>{const d=e.target.closest('.cell'); if(!d||!d.dataset.c) return; const key=d.dataset.v+"|"+d.dataset.c; const t=timers.get(key); if(t){clearTimeout(t); timers.delete(key); let val=++data[d.dataset.v][d.dataset.c]; if(val>99) val=99; d.textContent=val;}};
+  el('#cmd').addEventListener('mousedown',start); el('#cmd').addEventListener('mouseup',end); el('#cmd').addEventListener('mouseleave',()=>{timers.forEach(clearTimeout); timers.clear();});
+  el('#cmd').addEventListener('touchstart',(e)=>{const t=e.target.closest('.cell'); if(!t||!t.dataset.c) return; e.preventDefault(); start(e);},{passive:false});
+  el('#cmd').addEventListener('touchend',(e)=>{const t=e.target.closest('.cell'); if(!t||!t.dataset.c) return; e.preventDefault(); end(e);},{passive:false});
+  el('#cmd').addEventListener('touchmove',(e)=>{if(e.target.closest('.cell')) e.preventDefault();},{passive:false});
+
+  // Bloque double-tap & dblclick zoom
+  let lastTouchEnd=0; document.addEventListener('touchend',(e)=>{const now=Date.now(); if(now-lastTouchEnd<300){ e.preventDefault(); } lastTouchEnd=now;},{passive:false});
+  document.addEventListener('dblclick',(e)=>{e.preventDefault();},{passive:false});
+
+  // Précuisson
+  els('[data-pre]').forEach(b=>b.onclick=()=>{const v=b.dataset.pre; pre[v]++; preRefs[v].textContent=pre[v]; save();});
+
+  // Envoyer
+  el('#send').onclick=()=>{
+    const table=selectedTable; if(!table) return alert("Sélectionne d'abord un numéro de table.");
+    const items=[]; for(const v in data){for(const c in data[v]){const q=data[v][c]; if(q>0){items.push({viande:v,cuisson:c,qty:q}); if(pre[v]!==undefined){pre[v]-=q; if(pre[v]<0) pre[v]=0; preRefs[v].textContent=pre[v];}}}}
+    if(!items.length) return alert('Aucune quantité sélectionnée.');
+    tickets.push({id:Date.now(),table,createdAt:new Date().toLocaleTimeString(),items}); save(); renderTickets(); show('t'); renderTable();
+  };
+
+  // RAZ
+  el('#raz').onclick=()=>{renderTable();};
+
+  // Tickets terminé
+  ticketsEl.addEventListener('click',(e)=>{const id=e.target.dataset.done; if(!id) return; tickets=tickets.filter(t=>t.id!=id); save(); renderTickets();});
+
+  // Init
+  load(); renderTable(); Object.keys(pre).forEach(k=>preRefs[k]&&(preRefs[k].textContent=pre[k])); renderTickets();
+})();
+</script>
+<script>
+(function(){
+  const manifest = {name: "Gestion des Commandes",short_name: "Commandes",start_url: ".",display: "standalone",background_color: "#081420",theme_color: "#13314D",icons: []};
+  const link = document.getElementById('manifest-link');
+  if (link && (!link.href || link.getAttribute('href')==="#")){
+    const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+    link.href = URL.createObjectURL(manifestBlob);
+  }
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+    const swUrl = new URL('sw.js', location.href).toString();
+    fetch(swUrl, {cache:'no-store'}).then(r=>{
+      if(!r.ok){ console.warn('[PWA] sw.js introuvable, enregistrement ignoré.'); return; }
+      navigator.serviceWorker.register(swUrl, {scope:'./'})
+        .then(()=>console.log('[PWA] Service worker enregistré.'))
+        .catch(err=>console.error('[PWA] Échec enregistrement SW:', err));
+    }).catch(()=>console.warn('[PWA] Impossible de charger sw.js; SW non activé.'));
+  } else {
+    console.warn('[PWA] SW désactivé (origine non HTTP/HTTPS ou API indisponible).');
+  }
+})();
+</script>
+</body></html>
