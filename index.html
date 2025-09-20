@@ -61,7 +61,7 @@ th.c1,td.c1{background:var(--c1);color:#fff}th.c2,td.c2{background:var(--c2);col
   let selectedTable="";
 
   let data={}, timers=new Map();
-  let tickets=[], pre={"Côte":0,"T-Bone":0,"Tomahawk":0};
+  let tickets=[], pre={"Côte":0,"T-Bone":0,"Tmhk":0};
   const preRefs={"Côte":el('#pre-co'),"T-Bone":el('#pre-tb'),"Tmhk":el('#pre-th')};
   const save=()=>localStorage.setItem(STK,JSON.stringify({tickets,pre,selectedTable}));
   const load=()=>{try{const x=JSON.parse(localStorage.getItem(STK)||'{}');tickets=x.tickets||[];pre=Object.assign(pre,x.pre||{});selectedTable=x.selectedTable||"";if(selectedTable){tableBtn.textContent=`Table : ${selectedTable}`;}}catch{}};
