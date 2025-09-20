@@ -35,7 +35,7 @@ th.c1,td.c1{background:var(--c1);color:#fff}th.c2,td.c2{background:var(--c2);col
     <button id="send" class="btn action">Envoyer la commande</button>
     <button id="raz" class="btn danger">RAZ</button>
   </div>
-  <div class="card"><div class="center"><button class="btn" data-pre="Côte">Côte: <span id="pre-co">0</span></button><button class="btn" data-pre="T-Bone">T-Bone: <span id="pre-tb">0</span></button><button class="btn" data-pre="Tomahawk">Tomahawk: <span id="pre-th">0</span></button></div></div>
+  <div class="card"><div class="center"><button class="btn" data-pre="Côte">Côte: <span id="pre-co">0</span></button><button class="btn" data-pre="T-Bone">T-Bone: <span id="pre-tb">0</span></button><button class="btn" data-pre="Tmhk">Tmhk: <span id="pre-th">0</span></button></div></div>
   <table class="table" id="cmd"><thead><tr><th>Viande</th><th class="c1">Bleu</th><th class="c2">Saignant</th><th class="c3">À Point</th><th class="c4">Bien Cuit</th></tr></thead><tbody id="tb"></tbody></table>
 </section>
 <section id="p-t" class="panel"><div class="card"><h2 style="margin:0">Tickets – Commandes en cours</h2><div id="tickets" class="ticket-list"></div></div></section>
@@ -49,7 +49,7 @@ th.c1,td.c1{background:var(--c1);color:#fff}th.c2,td.c2{background:var(--c2);col
 </div>
 <script>
 (()=>{
-  const VIANDES=["ETC","Côte","Bavette","T-Bone","Tomahawk","Noix","TMHK W","RibCap","ChatB","Agneau","Magret","Poulet","Gigot"];
+  const VIANDES=["ETC","Côte","Bavette","T-Bone","Tmhk","Noix","TMHK W","RibCap","ChatB","Agneau","Magret","Poulet","Gigot"];
   const CUIS=["Bleu","Saignant","À Point","Bien Cuit"]; const STK='gc_state_v1';
   const TABLES=["1","2","3","4","5","55","6","7","8","9","11","12","14","15","16","17","18","19","21","22","23","24","25","30","31","32","33","34","35","36","37"];
   const el=(s)=>document.querySelector(s), els=(s)=>[...document.querySelectorAll(s)];
@@ -62,7 +62,7 @@ th.c1,td.c1{background:var(--c1);color:#fff}th.c2,td.c2{background:var(--c2);col
 
   let data={}, timers=new Map();
   let tickets=[], pre={"Côte":0,"T-Bone":0,"Tomahawk":0};
-  const preRefs={"Côte":el('#pre-co'),"T-Bone":el('#pre-tb'),"Tomahawk":el('#pre-th')};
+  const preRefs={"Côte":el('#pre-co'),"T-Bone":el('#pre-tb'),"Tmhk":el('#pre-th')};
   const save=()=>localStorage.setItem(STK,JSON.stringify({tickets,pre,selectedTable}));
   const load=()=>{try{const x=JSON.parse(localStorage.getItem(STK)||'{}');tickets=x.tickets||[];pre=Object.assign(pre,x.pre||{});selectedTable=x.selectedTable||"";if(selectedTable){tableBtn.textContent=`Table : ${selectedTable}`;}}catch{}};
   const row=(v)=>`<tr><td><div class="cell name">${v}</div></td>${CUIS.map((c,i)=>`<td class="c${i+1}"><div class="cell" data-v="${v}" data-c="${c}">0</div></td>`).join('')}</tr>`;
