@@ -168,4 +168,25 @@ th.c1,td.c1{background:var(--c1);color:#fff}th.c2,td.c2{background:var(--c2);col
   }
 })();
 </script>
+    <!-- ... ton code existant ... -->
+
+  <script>
+  function resizeApp() {
+    const app = document.body; // ou document.getElementById('app') si tu encadres ton contenu
+    const w = app.scrollWidth;
+    const h = app.scrollHeight;
+    const scale = Math.min(window.innerWidth / w, window.innerHeight / h, 1);
+    app.style.transform = `scale(${scale})`;
+    app.style.transformOrigin = "top left";
+    app.style.width = w + "px";
+    app.style.height = h + "px";
+  }
+
+  window.addEventListener("resize", resizeApp);
+  window.addEventListener("orientationchange", resizeApp);
+  window.addEventListener("load", resizeApp);
+  </script>
+</body>
+</html>
+
 </body></html
