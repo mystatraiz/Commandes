@@ -43,7 +43,7 @@ function openDB() {
 }
 
 /* ---------- Secours localStorage ---------- */
-function lire() {
+function lireSecours() {
   try {
     const raw = localStorage.getItem(FALLBACK_KEY);
     const arr = raw ? JSON.parse(raw) : [];
@@ -52,7 +52,7 @@ function lire() {
     return [];
   }
 }
-function ecrire(list) {
+function ecrireSecours(list) {
   try {
     localStorage.setItem(FALLBACK_KEY, JSON.stringify(list));
   } catch (e) {
@@ -64,7 +64,7 @@ function ecrire(list) {
 
 export async function toutesLesCommandes() {
   const db = await openDB();
-  if (!db || useFallback) return lire();
+  if (!db || useFallback) return lireSecours();
   return new Promise((resolve) => {
     try {
       const tx = db.transaction(STORE, 'readonly');
@@ -77,12 +77,27 @@ export async function toutesLesCommandes() {
   });
 }
 
+export async function lire(id) {
+  const db = await openDB();
+  if (!db || useFallback) return lireSecours().find((c) => c.id === id) || null;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE, 'readonly');
+      const req = tx.objectStore(STORE).get(id);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
 export async function enregistrer(commande) {
   const db = await openDB();
   if (!db || useFallback) {
-    const list = lire().filter((c) => c.id !== commande.id);
+    const list = lireSecours().filter((c) => c.id !== commande.id);
     list.push(commande);
-    ecrire(list);
+    ecrireSecours(list);
     return;
   }
   return new Promise((resolve) => {
@@ -90,7 +105,7 @@ export async function enregistrer(commande) {
       const tx = db.transaction(STORE, 'readwrite');
       tx.objectStore(STORE).put(commande);
       tx.oncomplete = () => resolve();
-      tx.onerror = () => { ecrire([...lire().filter((c) => c.id !== commande.id), commande]); resolve(); };
+      tx.onerror = () => { ecrireSecours([...lireSecours().filter((c) => c.id !== commande.id), commande]); resolve(); };
     } catch {
       resolve();
     }
@@ -100,7 +115,7 @@ export async function enregistrer(commande) {
 export async function supprimer(id) {
   const db = await openDB();
   if (!db || useFallback) {
-    ecrire(lire().filter((c) => c.id !== id));
+    ecrireSecours(lireSecours().filter((c) => c.id !== id));
     return;
   }
   return new Promise((resolve) => {
