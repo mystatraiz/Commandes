@@ -1,0 +1,712 @@
+/* ============================================================
+   Grill — feuille de style
+   Thème sombre assumé : l'application vit sur un écran posé près
+   du passe, souvent dans une lumière basse.
+   ============================================================ */
+
+:root {
+  /* Fonds, du plus profond au plus proche */
+  --bg:        #0A101A;
+  --surface:   #141C2A;
+  --surface-2: #1C2637;
+  --surface-3: #263145;
+  --line:      #2C3A4F;
+
+  /* Texte */
+  --ink:       #EAF0F8;
+  --ink-soft:  #A9BAD1;
+  --ink-mute:  #7286A1;
+
+  /* Accent : le doré du grill */
+  --accent:     #E8A63C;
+  --accent-2:   #F2C46B;
+  --accent-ink: #1B1206;
+
+  /* États */
+  --ok:   #35B37E;
+  --warn: #E8A63C;
+  --hot:  #E5484D;
+
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 26px;
+
+  --shadow-1: 0 1px 2px rgba(0,0,0,.35);
+  --shadow-2: 0 6px 18px rgba(0,0,0,.38);
+  --shadow-3: 0 18px 44px rgba(0,0,0,.5);
+
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+
+  --tap: 48px;   /* cible tactile minimale */
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+input, select { font: inherit; color: inherit; }
+h1, h2, h3, p, ul, ol { margin: 0; }
+ul, ol { list-style: none; padding: 0; }
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   Coquille de l'application
+   ============================================================ */
+
+.app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: var(--sat) var(--sar) 0 var(--sal);
+  overflow: hidden;
+}
+
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 10px;
+  background: linear-gradient(180deg, rgba(20,28,42,.96), rgba(10,16,26,.72));
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar .title { font-size: 19px; font-weight: 750; letter-spacing: -.35px; flex: 1; min-width: 0; }
+.topbar .sub { display: block; font-size: 12px; font-weight: 600; color: var(--ink-mute); letter-spacing: 0; }
+
+.content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px;
+  padding-bottom: calc(14px + var(--sab));
+}
+
+.footer-bar {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px calc(10px + var(--sab));
+  background: linear-gradient(0deg, var(--bg) 55%, rgba(10,16,26,0));
+  border-top: 1px solid var(--line);
+}
+
+/* ============================================================
+   Boutons
+   ============================================================ */
+
+.btn {
+  min-height: var(--tap);
+  padding: 12px 18px;
+  border-radius: var(--r-md);
+  font-weight: 700;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: transform .09s ease, filter .15s ease, background .15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn:disabled { opacity: .38; cursor: default; }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  color: var(--accent-ink);
+  box-shadow: var(--shadow-2);
+}
+.btn-ghost {
+  background: var(--surface-2);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.btn-ghost:active:not(:disabled) { background: var(--surface-3); }
+.btn-quiet { background: transparent; color: var(--ink-soft); }
+.btn-quiet:active { background: var(--surface-2); }
+.btn-ok { background: var(--ok); color: #05130C; }
+.btn-icon {
+  min-width: var(--tap);
+  padding: 10px;
+  border-radius: var(--r-md);
+}
+.btn-block { width: 100%; }
+.btn-lg { min-height: 58px; font-size: 17px; }
+
+/* ============================================================
+   Accueil — commandes en cours
+   ============================================================ */
+
+.orders {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+  align-content: start;
+}
+
+.order {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2), inset 0 0 0 1px var(--line);
+  overflow: hidden;
+  position: relative;
+  animation: pop .28s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes pop {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+.order::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--ok);
+}
+.order.warn::before { background: var(--warn); }
+.order.hot::before  { background: var(--hot); }
+.order.hot { box-shadow: var(--shadow-2), inset 0 0 0 1px rgba(229,72,77,.45); }
+
+.order-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px 11px 18px;
+}
+.order-table {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -.4px;
+  flex: 1;
+  min-width: 0;
+}
+.order-table span { color: var(--ink-mute); font-weight: 650; font-size: 14px; }
+
+.chrono {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -.2px;
+}
+.order.warn .chrono { background: rgba(232,166,60,.18); color: var(--accent-2); }
+.order.hot  .chrono { background: rgba(229,72,77,.2);  color: #FF8E91; }
+
+.order-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+}
+.order-line {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 14px 10px 18px;
+  background: var(--surface);
+}
+.qty {
+  flex: 0 0 auto;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 15px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
+}
+.order-line .nom { font-weight: 700; flex: 1; min-width: 0; }
+.order-line .cuisson { font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+
+.order-foot { display: flex; gap: 8px; padding: 11px 14px 13px 18px; }
+.order-foot .btn { min-height: 42px; font-size: 15px; padding: 8px 16px; }
+
+/* ============================================================
+   Écran vide
+   ============================================================ */
+
+.empty {
+  text-align: center;
+  padding: 52px 22px;
+  color: var(--ink-mute);
+}
+.empty .big { font-size: 46px; margin-bottom: 12px; opacity: .55; }
+.empty h2 { font-size: 18px; color: var(--ink-soft); font-weight: 700; margin-bottom: 6px; }
+.empty p { font-size: 14px; line-height: 1.55; max-width: 34ch; margin: 0 auto; }
+
+/* ============================================================
+   Roue de sélection de table
+   ============================================================ */
+
+.wheel-screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 14px;
+}
+.wheel-label { font-size: 14px; font-weight: 700; color: var(--ink-mute); letter-spacing: .3px; text-transform: uppercase; }
+
+/* Ces deux mesures pilotent la hauteur de la roue, celle des crans, les
+   espaceurs et la fenêtre de sélection : elles doivent rester solidaires,
+   sinon le cran retenu ne tombe plus dans le cadre. Elles sont posées sur le
+   conteneur pour que la roue et son cadre les partagent. */
+.wheel-wrap { position: relative; --wheel-h: 324px; --item-h: 58px; }
+
+.wheel {
+  position: relative;
+  width: min(320px, 82vw);
+  height: var(--wheel-h);
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  perspective: 780px;
+  perspective-origin: 50% 50%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Le dégradé doit laisser voir deux crans de part et d'autre du centre. */
+  mask-image: linear-gradient(180deg, transparent, #000 13%, #000 87%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 13%, #000 87%, transparent);
+  touch-action: pan-y;
+}
+.wheel::-webkit-scrollbar { display: none; }
+
+.wheel-pad { height: calc((var(--wheel-h) - var(--item-h)) / 2); flex: 0 0 auto; }
+
+.wheel-item {
+  height: var(--item-h);
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -.5px;
+  color: var(--ink-soft);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  cursor: pointer;
+}
+.wheel-item.on { color: var(--accent); }
+
+/* La fenêtre qui marque la valeur retenue */
+
+.wheel-frame {
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: var(--item-h);
+  z-index: 1;
+  transform: translateY(-50%);
+  border-top: 1.5px solid var(--line);
+  border-bottom: 1.5px solid var(--line);
+  background: linear-gradient(90deg, rgba(232,166,60,.06), rgba(232,166,60,.11), rgba(232,166,60,.06));
+  pointer-events: none;
+}
+
+/* ============================================================
+   Grille des grillades
+   ============================================================ */
+
+.meats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 10px;
+}
+.meat {
+  position: relative;
+  min-height: 74px;
+  padding: 14px 13px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-1), inset 0 0 0 1px var(--line);
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: -.2px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  text-align: left;
+  transition: transform .09s ease, background .15s ease;
+}
+.meat:active { transform: scale(.965); background: var(--surface-2); }
+.meat.picked { box-shadow: var(--shadow-1), inset 0 0 0 1.5px var(--accent); }
+.meat .count {
+  position: absolute;
+  top: 8px; right: 8px;
+  min-width: 24px; height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+/* En flux sous le nom : en paysage le bouton est bas et une étiquette
+   positionnée en absolu viendrait chevaucher le libellé. */
+.meat .tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* ============================================================
+   Panneau des cuissons
+   ============================================================ */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(4,8,14,.66);
+  backdrop-filter: blur(3px);
+  animation: fade .16s ease;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+
+.sheet {
+  width: 100%;
+  max-width: 620px;
+  background: var(--surface);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: var(--shadow-3);
+  padding: 10px 14px calc(16px + var(--sab));
+  animation: rise .24s cubic-bezier(.2,.9,.3,1);
+}
+@keyframes rise { from { transform: translateY(100%) } to { transform: none } }
+.sheet .grab { width: 42px; height: 4px; border-radius: 99px; background: var(--surface-3); margin: 2px auto 12px; }
+.sheet h2 { font-size: 19px; font-weight: 780; text-align: center; margin-bottom: 3px; letter-spacing: -.3px; }
+.sheet .hint { text-align: center; font-size: 13px; color: var(--ink-mute); margin-bottom: 14px; }
+
+.cuissons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.cuisson-btn {
+  min-height: 78px;
+  border-radius: var(--r-md);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: var(--shadow-2);
+  transition: transform .09s ease;
+}
+.cuisson-btn:active { transform: scale(.96); }
+.cuisson-btn .dot {
+  width: 15px; height: 15px; border-radius: 99px;
+  background: rgba(255,255,255,.55);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.16);
+}
+
+/* ============================================================
+   Panier de la commande en cours
+   ============================================================ */
+
+.basket {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 9px 14px;
+  max-height: 27dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.basket-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--ink-mute);
+  margin-bottom: 8px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 8px 7px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 14px;
+  font-weight: 700;
+  animation: pop .2s ease;
+}
+.chip .pill {
+  width: 11px; height: 11px; border-radius: 99px;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.12);
+  flex: 0 0 auto;
+}
+.chip .n { color: var(--accent); font-weight: 800; }
+.chip .x {
+  width: 24px; height: 24px;
+  border-radius: 99px;
+  display: grid; place-items: center;
+  background: var(--surface-3);
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+.chip .x:active { background: var(--hot); color: #fff; }
+
+/* ============================================================
+   Statistiques
+   ============================================================ */
+
+.seg {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.seg button {
+  /* base auto : « Aujourd'hui » est plus long que les autres et doit tenir
+     entier plutôt que d'être coupé. */
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 8px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+.seg button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); font-weight: 800; }
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+.kpi {
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 13px 14px;
+}
+.kpi .k { font-size: 12px; font-weight: 700; color: var(--ink-mute); text-transform: uppercase; letter-spacing: .5px; }
+.kpi .v { font-size: 27px; font-weight: 800; letter-spacing: -.8px; margin-top: 3px; }
+.kpi .v small { font-size: 15px; font-weight: 700; color: var(--ink-soft); letter-spacing: 0; }
+
+.panel {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 15px 16px 17px;
+  margin-bottom: 12px;
+}
+.panel h2 {
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -.2px;
+  margin-bottom: 3px;
+}
+.panel .lede { font-size: 13px; color: var(--ink-mute); margin-bottom: 14px; }
+
+/* Barres horizontales : une ligne = un libellé, une barre, une valeur */
+.bars { display: flex; flex-direction: column; gap: 11px; }
+.bar-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: baseline; }
+.bar-row .lbl { font-size: 14px; font-weight: 700; }
+.bar-row .val { font-size: 14px; font-weight: 800; color: var(--ink-soft); }
+.bar-row .val em { font-style: normal; color: var(--ink-mute); font-weight: 700; font-size: 12px; }
+.bar-track {
+  grid-column: 1 / -1;
+  height: 9px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 2px 4px 4px 2px;   /* extrémité côté donnée arrondie */
+  background: var(--accent);         /* une seule mesure = une seule couleur */
+  transition: width .5s cubic-bezier(.2,.8,.3,1);
+}
+
+/* Histogramme des heures.
+   La colonne est dimensionnée en pourcentage : il lui faut donc un parent de
+   hauteur définie, d'où la zone intermédiaire — sans elle le pourcentage se
+   résout contre une hauteur automatique et la barre s'écrase. */
+.hours { display: flex; align-items: flex-end; gap: 4px; }
+/* Plafond de largeur : sur deux ou trois heures seulement, des colonnes
+   étirées deviendraient des pavés au lieu de marques fines. */
+.hour { flex: 1 1 0; min-width: 0; max-width: 44px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.hour .zone { height: 104px; width: 100%; display: flex; align-items: flex-end; }
+.hour .col {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 4px 4px 2px 2px;   /* extrémité côté donnée arrondie */
+  background: var(--accent);
+  transition: height .5s cubic-bezier(.2,.8,.3,1);
+}
+.hour .col.nil { background: var(--surface-3); }
+.hour .h { font-size: 10px; font-weight: 700; color: var(--ink-mute); }
+
+
+
+/* Barre du bouton « Nouvelle commande », toujours accessible en haut */
+.newbar {
+  flex: 0 0 auto;
+  padding: 12px 14px 4px;
+}
+.newbar .btn { max-width: 1080px; margin-inline: auto; }
+
+/* Barre empilée : part de chaque cuisson dans le total.
+   L'écart de 2px laisse voir la surface entre deux segments — c'est ce qui les
+   sépare, plutôt qu'un contour tracé autour des marques. */
+.stack {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.stack-seg { min-width: 4px; border-radius: 2px; }
+
+.swatch {
+  width: 11px; height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: -1px;
+}
+
+/* Vue tableau : l'équivalent des graphiques, lisible sans les couleurs */
+.table-wrap { overflow-x: auto; }
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 18px;
+  font-size: 14px;
+}
+table.data:last-child { margin-bottom: 0; }
+table.data caption {
+  text-align: left;
+  font-size: 13px;
+  color: var(--ink-mute);
+  padding-bottom: 8px;
+}
+table.data th, table.data td {
+  text-align: left;
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid var(--line);   /* filet discret, jamais en pointillé */
+}
+table.data thead th {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--ink-mute);
+}
+table.data tbody th { font-weight: 700; }
+table.data td { text-align: right; font-weight: 700; color: var(--ink-soft); }
+
+/* ============================================================
+   Toast
+   ============================================================ */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + var(--sab));
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: min(92vw, 460px);
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  box-shadow: var(--shadow-3), inset 0 0 0 1px var(--line);
+  font-size: 14px;
+  font-weight: 700;
+  animation: toastIn .22s cubic-bezier(.2,.9,.3,1.1);
+}
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(14px) } to { opacity: 1; transform: translateX(-50%) } }
+.toast .btn { min-height: 36px; padding: 7px 13px; font-size: 14px; }
+
+/* ============================================================
+   Orientation paysage : la hauteur devient la ressource rare
+   ============================================================ */
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .topbar { padding: 8px 14px 7px; }
+  .topbar .title { font-size: 17px; }
+  .content { padding: 10px 14px; }
+  .orders { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
+  .wheel-wrap { --wheel-h: 196px; --item-h: 44px; }
+  .wheel-item { font-size: 25px; }
+  .wheel-screen { gap: 10px; padding: 8px; }
+  .meat { min-height: 60px; padding: 11px 12px; font-size: 16px; }
+  .cuissons { grid-template-columns: repeat(4, 1fr); }
+  .cuisson-btn { min-height: 66px; font-size: 15px; }
+  .basket { max-height: 22dvh; }
+  .footer-bar { padding: 8px 14px calc(8px + var(--sab)); }
+  .btn-lg { min-height: 48px; }
+  .hour .zone { height: 76px; }
+}
+
+/* Grands écrans : on centre plutôt que d'étirer à l'infini */
+@media (min-width: 900px) {
+  .content > .inner, .footer-bar { max-width: 1080px; margin-inline: auto; width: 100%; }
+  .orders { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

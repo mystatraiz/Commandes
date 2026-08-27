@@ -1,55 +1,68 @@
-# Grill — Gestion des Commandes
+# Grill — Commandes
 
-Aide-mémoire des commandes au grill : on saisit ce qui est commandé table par table,
-et l'application se souvient de ce qui reste à cuire et depuis combien de temps.
+Prise de commandes au grill : on saisit table par table, l'application se
+souvient de ce qui est en cours, depuis combien de temps, et garde l'historique
+pour les statistiques du service.
 
-Application web autonome (un seul fichier `index.html`), installable sur téléphone
-ou tablette et **utilisable sans réseau**. Aucune donnée ne quitte l'appareil :
-tout est conservé dans le stockage local du navigateur.
+Application React installable sur téléphone ou tablette, **utilisable sans
+réseau**. Les données restent sur l'appareil : rien n'est envoyé nulle part.
 
-## Les trois écrans
+## Le parcours
 
-| Écran | À quoi il sert |
-|---|---|
-| **Saisie** | La grille viandes × cuissons. On tape les quantités, on choisit la table, on envoie. |
-| **Grill** | La synthèse : le total de chaque cuisson à faire, toutes tables confondues. C'est la vue à garder sous les yeux pendant le service. |
-| **Tickets** | Les commandes envoyées, la plus ancienne en premier, avec le temps écoulé. |
+**Écran d'accueil** — la liste des commandes en cours, de la plus ancienne à la
+plus récente, avec pour chacune le numéro de table, l'heure de prise, le détail
+des pièces et un chronomètre qui tourne. Le liseré passe au orange après
+8 minutes, au rouge après 15. Un bouton **✓ Servi** fait disparaître la commande
+une fois envoyée en salle — avec possibilité d'annuler si c'est une fausse
+manœuvre. Le bouton **Nouvelle commande** est en haut, toujours accessible.
 
-Les onglets **Grill** et **Tickets** affichent une pastille avec, respectivement,
-le nombre de pièces encore à cuire et le nombre de tickets ouverts.
+**Étape 1 — la table.** Une roue façon sélecteur iOS, dans l'ordre du plan de
+salle. On la fait tourner ou on tape directement le numéro voulu.
 
-## Utilisation
+**Étape 2 — les grillades.** Les pièces en deux colonnes. Un appui ouvre le
+choix de la cuisson, quatre grandes touches de couleur ; l'appui sur la cuisson
+ramène aussitôt à la liste des grillades, et on enchaîne. Chaque bouton porte
+une pastille avec le nombre de pièces déjà commandées. Le récapitulatif s'écrit
+en bas au fur et à mesure ; le `×` d'une ligne retire une pièce.
 
-**Saisir une commande**
+**Le poulet n'a pas de cuisson** : un appui l'ajoute directement, sans passer
+par l'écran des couleurs.
 
-1. Appuyer sur le bouton **Table** en haut à gauche et choisir le numéro.
-   Les tables ayant déjà un ticket ouvert sont signalées par une pastille dorée.
-2. Dans la grille, appuyer sur une case pour ajouter une pièce (un appui = +1).
-   Un **appui long** sur une case la remet à zéro.
-3. Appuyer sur **Envoyer**. Le bouton affiche le nombre total de pièces saisies.
+**Envoyer** ramène à l'accueil, où la commande vient s'inscrire sous les
+précédentes, chronomètre lancé.
 
-**Suivre la cuisson**
+## Statistiques
 
-- L'onglet **Grill** regroupe toutes les commandes ouvertes : pour chaque viande et
-  chaque cuisson, le nombre de pièces à faire et les tables qui les attendent.
-- Dans **Tickets**, appuyer sur une ligne la barre pour indiquer qu'elle est servie ;
-  elle sort aussitôt du total de l'onglet Grill. **Terminé** clôt le ticket entier.
-- Le minuteur de chaque ticket passe en orange après 8 minutes, en rouge après 15.
+Accessibles par l'icône en haut à droite de l'accueil, sur quatre périodes
+(aujourd'hui, 7 jours, 30 jours, tout) :
 
-**Précuisson**
+- nombre de commandes, de pièces, moyenne par commande et temps de service moyen ;
+- répartition des cuissons les plus demandées, en part du total ;
+- classement des grillades, de la plus servie à la moins servie ;
+- activité par tranche horaire, qui fait ressortir les coups de feu ;
+- classement des tables.
 
-La bande du haut suit le stock de pièces déjà précuites (Côte, T-Bone, Tmhk, Gigot).
-Les boutons `−` et `+` ajustent le compteur ; envoyer une commande décrémente
-automatiquement le stock des pièces concernées.
+L'icône ☰ bascule sur une **vue tableau** : les mêmes chiffres sans dépendre des
+couleurs, utile pour recopier ou imprimer.
 
-**En cas d'erreur**
+## Où sont les données
 
-Le bouton **↶** annule la dernière action, quelle qu'elle soit : un appui de trop,
-une remise à zéro, un RAZ, un envoi, un ticket clôturé par erreur. Les messages de
-confirmation proposent aussi « Annuler » directement.
+Les commandes sont écrites dans **IndexedDB**, la base du navigateur. Elles
+survivent donc à un plantage, à une fermeture brutale ou à un redémarrage de
+l'appareil. Si IndexedDB est indisponible (navigation privée, réglage
+restrictif), l'application bascule seule sur `localStorage` plutôt que
+d'interrompre le service.
 
-Rien n'est jamais perdu à la fermeture : la saisie en cours, les tickets et les
-compteurs sont enregistrés à chaque geste et rechargés au démarrage.
+La commande **en cours de saisie** est enregistrée à chaque appui, séparément :
+si l'écran se verrouille au milieu d'une prise, elle est proposée telle quelle
+au redémarrage.
+
+Les commandes servies sont conservées pour alimenter les statistiques, puis
+purgées automatiquement au-delà d'un an (`RETENTION_JOURS`).
+
+Tout est **local à l'appareil**. Deux tablettes ne partagent pas leurs
+commandes — il faudrait pour cela un serveur, ce que l'application ne fait pas
+aujourd'hui.
 
 ## Installation sur le téléphone ou la tablette
 
@@ -58,59 +71,86 @@ Ouvrir l'adresse du site, puis :
 - **Android / Chrome** : menu ⋮ → « Installer l'application ».
 - **iPhone / iPad, Safari** : bouton Partager → « Sur l'écran d'accueil ».
 
-L'application s'ouvre alors en plein écran et fonctionne même sans connexion.
-Quand une nouvelle version est publiée, un message « Nouvelle version disponible »
-propose de recharger — jamais pendant un geste, le rechargement n'est fait
-qu'après acceptation.
+L'application s'ouvre en plein écran et fonctionne hors connexion. Quand une
+nouvelle version est en ligne, un bandeau propose de recharger : rien n'est
+jamais imposé en plein service.
+
+## Mise en ligne
+
+Le projet est un site statique construit par Vite ; il se déploie sur Vercel
+sans configuration (framework détecté automatiquement, sortie dans `dist/`).
+
+```bash
+npm install
+npm run dev       # développement, rechargement à chaud
+npm run build     # production dans dist/
+npm run preview   # vérifier le build en local
+```
+
+Sur Vercel : importer le dépôt, laisser les réglages proposés, déployer.
 
 ## Adapter la carte
 
-Tout se règle en haut du script dans `index.html` :
+Tout se règle dans `src/config.js`, sans toucher au reste :
 
 ```js
-const VIANDES     = ["ETC","Côte","Bavette", …];  // lignes de la grille
-const CUIS        = ["Bleu","Saignant","À Point","Bien Cuit"];
-const TABLES      = ["1","2","3", …];             // plan de salle
-const PRE_VIANDES = ["Côte","T-Bone","Tmhk","Gigot"]; // suivi de précuisson
-
-const WARN_MIN = 8;   // ticket orange après N minutes
-const HOT_MIN  = 15;  // ticket rouge après N minutes
+export const TABLES      = ['1','2','3', …];   // ordre de la roue
+export const CUISSONS    = [ … ];              // libellés et couleurs
+export const GRILLADES   = [ … ];              // la carte du grill
+export const SEUIL_ORANGE = 8;                 // minutes avant le orange
+export const SEUIL_ROUGE  = 15;                // minutes avant le rouge
+export const RETENTION_JOURS = 365;            // durée de l'historique
 ```
 
-Ajouter ou retirer une viande ne casse rien : les tickets déjà ouverts qui
-mentionnent une viande retirée restent affichés dans la synthèse.
+Pour qu'une pièce saute l'écran des cuissons, lui ajouter `sansCuisson: true` —
+c'est ce qui est fait pour le poulet.
 
-Après toute modification, incrémenter `CACHE` en haut de `sw.js`
-(`grill-v3` → `grill-v4`) pour que les appareils déjà installés récupèrent
-la nouvelle version.
+Retirer une grillade de la carte ne casse pas l'historique : les commandes
+passées qui la mentionnent restent comptées dans les statistiques.
+
+**Les quatre couleurs de cuisson ne sont pas choisies au hasard.** Elles servent
+aussi de marques dans les graphiques et ont été calées pour rester
+distinguables par un daltonien — l'écart entre les deux plus proches est de
+15,6 là où le seuil admis est 8. Si vous les modifiez, gardez cet écart en tête,
+sans quoi la répartition des cuissons devient illisible pour une partie des
+lecteurs.
 
 ## Tests
 
-Les tests pilotent un vrai navigateur (Playwright) sur l'application servie
-localement — parcours complet de saisie, persistance, migration des anciennes
-données, tolérance aux données corrompues et fonctionnement hors-ligne.
+Les tests pilotent un vrai navigateur (Playwright) sur l'application construite,
+en simulant un téléphone tactile : parcours complet de prise de commande, roue,
+cumul des pièces identiques, cas du poulet, persistance après rechargement,
+commande servie et son annulation, statistiques, vue tableau et bouton retour.
 
 ```bash
-npm install     # installe Playwright (et son navigateur)
-npm test        # lance les deux suites, serveur inclus
+npm run build
+npm test
 ```
 
-`SHOTS=1 npm test` écrit en plus des captures des trois écrans dans `test/captures/`.
+`SHOTS=1 npm test` écrit en plus des captures des écrans dans `test/captures/`.
 Si Chromium est déjà installé ailleurs : `CHROME_PATH=/chemin/vers/chrome npm test`.
 
-`npm start` sert le dépôt en local pour essayer l'application dans un navigateur.
-
-## Fichiers
+## Organisation
 
 ```
-index.html                 application complète (interface + logique)
-manifest.json              déclaration PWA (nom, icônes, couleurs)
-sw.js                      service worker — cache hors-ligne
-icon.svg                   icône source
-icon-192.png  icon-512.png  icon-maskable-512.png
-test/                      tests navigateur (+ serveur statique intégré)
+index.html                coquille de la page
+vite.config.js            build + génération du PWA (manifeste, service worker)
+public/                   icônes
+src/
+  config.js               carte, plan de salle, cuissons, seuils
+  db.js                   IndexedDB (+ secours localStorage) et brouillon
+  App.jsx                 navigation, données, actions
+  screens/
+    Accueil.jsx           commandes en cours
+    ChoixTable.jsx        étape 1 — la roue
+    Saisie.jsx            étape 2 — grillades et cuissons
+    Stats.jsx             statistiques et vue tableau
+  components/
+    Roue.jsx              le sélecteur de table
+    Toast.jsx             messages et annulation
+    MajPWA.jsx            proposition de mise à jour
+  lib/
+    temps.js              horloge partagée et formats de durée
+    stats.js              agrégation des commandes
+test/                     tests navigateur (+ serveur statique intégré)
 ```
-
-Les icônes PNG sont produites à partir de `icon.svg`. Pour les régénérer après
-modification du dessin, ouvrir `icon.svg` dans un navigateur et exporter en
-192×192 et 512×512, ou utiliser n'importe quel convertisseur SVG → PNG.

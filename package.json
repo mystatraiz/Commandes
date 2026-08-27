@@ -1,13 +1,23 @@
 {
   "name": "grill-commandes",
-  "version": "2.0.0",
   "private": true,
-  "description": "Aide-mémoire des commandes au grill : saisie par table, synthèse des cuissons et suivi des tickets.",
+  "version": "3.0.0",
+  "type": "module",
+  "description": "Prise de commandes au grill : saisie guidée, suivi des commandes en cours et statistiques.",
   "scripts": {
-    "test": "node test/app.test.js && node test/robustesse.test.js",
-    "start": "node -e \"require('./test/serve').start(8899).then(s=>console.log('Application servie sur '+s.base))\""
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node test/app.test.cjs"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "playwright": "^1.62.1"
+    "@vitejs/plugin-react": "^5.1.0",
+    "playwright": "^1.62.1",
+    "vite": "^7.1.0",
+    "vite-plugin-pwa": "^1.3.0"
   }
 }
