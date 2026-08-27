@@ -1,196 +1,801 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#13314D"><link id="manifest-link" rel="manifest" href="#"><title>Gestion des Commandes</title><style>
-:root{--bgd:#081420;--bg:#13314D;--st:#1A2D3D;--ink:#ECDEAD;--brand:#BA914A;--mut:#446B88;--c1:#4D1B87;--c2:#ED330C;--c3:#E89F90;--c4:#825C52}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#13314D">
+<meta name="description" content="Aide-mémoire des commandes au grill : saisie par table, synthèse des cuissons, suivi des tickets.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Grill">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Grill — Commandes</title>
+<style>
+:root{
+  --bgd:#081420; --bg:#13314D; --st:#1A2D3D; --ink:#ECDEAD; --brand:#BA914A; --mut:#446B88;
+  --c1:#4D1B87; --c2:#ED330C; --c3:#E89F90; --c4:#825C52;
+  --ok:#2E9E5B; --warn:#E0982B; --hot:#D9433F;
+  --gap:3px; --namecol:74px; --radius:10px;
+  --pad-t:env(safe-area-inset-top,0px);
+  --pad-b:env(safe-area-inset-bottom,0px);
+  --pad-l:env(safe-area-inset-left,0px);
+  --pad-r:env(safe-area-inset-right,0px);
+}
 *{box-sizing:border-box}
-html,body{height:100%;-ms-touch-action:manipulation;touch-action:manipulation}
-body{margin:0;padding:20px;font-family:Arial,sans-serif;background:var(--bgd);color:var(--ink)}
-.tabs{display:flex;gap:8px;margin:10px 0 16px}.tab{flex:1;text-align:center;border:1px solid var(--mut);background:transparent;color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}.tab[aria-selected="true"]{background:var(--brand);color:var(--bgd);border-color:transparent;font-weight:700}.panel{display:none}.panel.active{display:block}
-.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;justify-content:center}
-.card{background:var(--bg);border:1px solid var(--st);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 6px 16px rgba(0,0,0,.2)}.center{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.btn{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}.action{background:var(--brand);color:var(--bgd)}.danger{background:#d9534f;color:#fff}
-.table{border-collapse:separate;border-spacing:0;width:100%;background:var(--bg);border-radius:12px;overflow:hidden;margin-top:15px;table-layout:fixed}
-th{background:var(--mut);border:1px solid var(--st);padding:10px;text-align:center}
-tr{height:50px}
-td{border:1px solid var(--st);padding:0;text-align:center;cursor:pointer;user-select:none}
-th.c1,td.c1{background:var(--c1);color:#fff}th.c2,td.c2{background:var(--c2);color:#fff}th.c3,td.c3{background:var(--c3);color:#111}th.c4,td.c4{background:var(--c4);color:#fff}
-.cell{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:800;line-height:1;font-size:clamp(12px,4vw,22px);-webkit-user-select:none;user-select:none}
-.cell.name{justify-content:flex-start;padding-left:8px}
-.ticket-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}.ticket{background:#0f2336;border:1px solid var(--st);border-radius:12px;padding:12px;box-shadow:0 6px 16px rgba(0,0,0,.25)}.ticket header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.badge{background:var(--mut);border:1px solid var(--st);padding:2px 8px;border-radius:999px;font-size:12px}
-.select{padding:8px;border-radius:8px;border:1px solid var(--mut);background:var(--bg);color:var(--ink)}
-/* Modal sélection de table */
-.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:999}
-.hidden{display:none}
-.modal-card{background:var(--bg);border:1px solid var(--st);border-radius:12px;padding:16px;max-width:520px;width:92%}
-.modal-card h3{margin:0 0 12px;text-align:center}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
-.table-option{padding:10px;border:1px solid var(--mut);background:transparent;color:var(--ink);border-radius:10px;cursor:pointer;font-weight:700}
-.modal-actions{display:flex;justify-content:flex-end;margin-top:12px}
-</style></head><body>
-<div class="tabs" role="tablist">
-  <button id="tab-table" class="tab" aria-selected="false">Table : --</button>
-  <button id="tab-s" class="tab" aria-selected="true">Saisie</button>
-  <button id="tab-t" class="tab" aria-selected="false">Tickets</button>
-</div>
-<section id="p-s" class="panel active">
-  <div class="topbar">
-    <button id="send" class="btn action">Envoyer la commande</button>
-    <button id="raz" class="btn danger">RAZ</button>
+html{height:100%}
+body{
+  margin:0;height:100dvh;overflow:hidden;
+  display:flex;flex-direction:column;
+  padding:var(--pad-t) var(--pad-r) var(--pad-b) var(--pad-l);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bgd);color:var(--ink);
+  touch-action:manipulation;-webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit;font-size:inherit;color:inherit}
+
+/* ---------- Barre du haut ---------- */
+.topbar{flex:0 0 auto;display:flex;gap:6px;align-items:stretch;padding:6px 6px 4px}
+.tabs{flex:1 1 auto;min-width:0;display:flex;gap:6px}
+.tab{
+  /* min-width:0 : sans cela un onglet refuse de passer sous la largeur de son
+     texte et la barre déborde de l'écran sur les petits téléphones. */
+  flex:1 1 0;min-width:0;min-height:44px;padding:6px 4px;border:1px solid var(--mut);background:transparent;
+  border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:15px;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  white-space:nowrap;overflow:hidden;
+}
+.tab[aria-selected="true"]{background:var(--brand);color:var(--bgd);border-color:transparent}
+.tab .count{
+  min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--hot);color:#fff;
+  font-size:12px;line-height:20px;font-weight:800;display:none;
+}
+.tab .count.on{display:inline-block}
+.tab[aria-selected="true"] .count{background:var(--bgd);color:var(--ink)}
+#tab-table{
+  flex:0 0 auto;min-width:104px;padding:6px 8px;background:var(--bg);border-color:var(--brand);
+  color:var(--brand);font-size:16px;
+}
+#tab-table.set{background:var(--brand);color:var(--bgd);border-color:transparent}
+
+/* ---------- Panneaux ---------- */
+main{flex:1 1 auto;min-height:0;position:relative}
+.panel{position:absolute;inset:0;display:none;flex-direction:column;min-height:0}
+.panel.active{display:flex}
+.scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:0 6px 6px}
+
+/* ---------- Précuisson ---------- */
+.pre{flex:0 0 auto;display:flex;gap:6px;padding:0 6px 6px}
+.pre-item{
+  flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:2px;
+  background:var(--bg);border:1px solid var(--st);border-radius:var(--radius);padding:3px 4px;
+}
+.pre-item .lbl{
+  font-size:10px;font-weight:800;opacity:.7;text-align:center;line-height:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.2px;
+}
+.pre-row{display:flex;align-items:center;gap:3px;min-width:0}
+.pre-item .val{
+  flex:0 0 auto;min-width:22px;text-align:center;
+  font-size:19px;font-weight:800;color:var(--brand);line-height:1;
+}
+.pre-item .val.zero{opacity:.3;color:var(--ink)}
+.step{
+  flex:1 1 0;min-width:0;min-height:32px;border:none;border-radius:7px;background:var(--st);
+  font-size:17px;font-weight:800;cursor:pointer;line-height:1;padding:0;
+}
+
+/* ---------- Grille viandes × cuissons ---------- */
+.mgrid{
+  display:grid;grid-template-columns:var(--namecol) repeat(4,1fr);
+  grid-template-rows:auto;grid-auto-rows:minmax(36px,1fr);
+  gap:var(--gap);min-height:100%;align-content:stretch;
+}
+.hd{
+  position:sticky;top:0;z-index:2;background:var(--mut);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-size:12px;font-weight:800;padding:5px 2px;line-height:1.1;min-height:34px;
+}
+.hd.c1{background:var(--c1);color:#fff}.hd.c2{background:var(--c2);color:#fff}
+.hd.c3{background:var(--c3);color:#111}.hd.c4{background:var(--c4);color:#fff}
+.name{
+  display:flex;align-items:center;padding-left:7px;background:var(--bg);border-radius:8px;
+  font-weight:800;font-size:clamp(11px,3.1vw,15px);letter-spacing:-.2px;
+}
+.cell{
+  display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;
+  font-weight:800;font-size:clamp(15px,5vw,26px);line-height:1;
+  user-select:none;-webkit-user-select:none;position:relative;
+  opacity:.58;transition:opacity .12s,transform .06s;
+}
+.cell.c1{background:var(--c1);color:#fff}.cell.c2{background:var(--c2);color:#fff}
+.cell.c3{background:var(--c3);color:#111}.cell.c4{background:var(--c4);color:#fff}
+.cell.has{opacity:1;box-shadow:inset 0 0 0 2px var(--ink)}
+.cell.tap{transform:scale(.93)}
+.cell .dot{font-size:14px;opacity:.5}
+
+/* ---------- Barre du bas ---------- */
+.actions{flex:0 0 auto;display:flex;gap:6px;padding:0 6px 6px}
+.btn{
+  min-height:52px;padding:8px 12px;border:none;border-radius:var(--radius);cursor:pointer;
+  font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.action{flex:1;background:var(--brand);color:var(--bgd);font-size:17px}
+.btn.ghost{background:var(--bg);border:1px solid var(--mut);color:var(--ink);flex:0 0 auto;min-width:56px}
+.btn.danger{background:var(--bg);border:1px solid var(--hot);color:var(--hot);flex:0 0 auto;min-width:64px}
+.btn .n{background:rgba(0,0,0,.22);border-radius:999px;padding:1px 8px;font-size:14px}
+
+/* ---------- Synthèse grill ---------- */
+.sum-head{
+  flex:0 0 auto;display:flex;justify-content:space-between;align-items:baseline;
+  gap:8px;padding:2px 12px 8px;font-size:13px;opacity:.75;
+}
+.sum-head b{font-size:22px;color:var(--brand);opacity:1}
+.sum-row{
+  display:grid;grid-template-columns:var(--namecol) repeat(4,1fr);gap:var(--gap);margin-bottom:var(--gap);
+  min-height:48px;
+}
+.sum-row .name{font-size:clamp(12px,3.4vw,16px)}
+.sum-row.head{position:sticky;top:0;z-index:2;min-height:0;background:var(--bgd);padding-bottom:var(--gap)}
+.sum-cell{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-radius:8px;font-weight:800;font-size:clamp(16px,5vw,26px);line-height:1;
+}
+.sum-cell.c1{background:var(--c1);color:#fff}.sum-cell.c2{background:var(--c2);color:#fff}
+.sum-cell.c3{background:var(--c3);color:#111}.sum-cell.c4{background:var(--c4);color:#fff}
+.sum-cell.empty{background:var(--st);color:var(--ink);opacity:.22}
+.sum-cell .tables{font-size:9px;font-weight:700;opacity:.85;margin-top:3px;letter-spacing:.2px}
+
+/* ---------- Tickets ---------- */
+.ticket-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;padding-top:2px}
+.ticket{
+  background:var(--bg);border:1px solid var(--st);border-left:5px solid var(--ok);
+  border-radius:var(--radius);padding:9px 10px;display:flex;flex-direction:column;gap:7px;
+}
+.ticket.warn{border-left-color:var(--warn)}
+.ticket.hot{border-left-color:var(--hot)}
+.ticket.served{border-left-color:var(--brand);opacity:.75}
+.ticket header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ticket .tnum{font-size:19px;font-weight:800}
+.ticket .age{font-variant-numeric:tabular-nums;font-weight:800;font-size:15px;padding:2px 8px;border-radius:999px;background:var(--st)}
+.ticket.warn .age{background:var(--warn);color:#111}
+.ticket.hot .age{background:var(--hot);color:#fff}
+.ticket ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.ticket li{
+  display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;
+  background:var(--st);cursor:pointer;font-size:15px;font-weight:700;min-height:40px;
+}
+.ticket li .q{
+  min-width:26px;height:26px;line-height:26px;text-align:center;border-radius:6px;
+  font-weight:800;font-size:15px;flex:0 0 auto;
+}
+.ticket li .q.c1{background:var(--c1);color:#fff}.ticket li .q.c2{background:var(--c2);color:#fff}
+.ticket li .q.c3{background:var(--c3);color:#111}.ticket li .q.c4{background:var(--c4);color:#fff}
+.ticket li .txt{flex:1;line-height:1.2}
+.ticket li .txt small{display:block;font-size:11px;font-weight:700;opacity:.7}
+.ticket li.done{opacity:.4}
+.ticket li.done .txt{text-decoration:line-through}
+.ticket footer{display:flex;gap:6px}
+.ticket footer .btn{min-height:40px;font-size:14px;flex:1}
+.ticket footer .btn.done-all{background:var(--ok);color:#fff}
+.empty-state{text-align:center;opacity:.5;padding:36px 16px;font-size:15px;line-height:1.5}
+
+/* ---------- Modale table ---------- */
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);z-index:50;padding:12px}
+.modal.hidden{display:none}
+.modal-card{background:var(--bg);border:1px solid var(--st);border-radius:14px;padding:14px;max-width:560px;width:100%;max-height:88dvh;display:flex;flex-direction:column}
+.modal-card h3{margin:0 0 10px;text-align:center;font-size:17px}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:7px;overflow-y:auto;padding:2px}
+.table-option{
+  position:relative;min-height:54px;border:1px solid var(--mut);background:transparent;
+  border-radius:10px;cursor:pointer;font-weight:800;font-size:19px;
+}
+.table-option.busy{border-color:var(--brand);background:rgba(186,145,74,.16)}
+.table-option.busy::after{
+  content:attr(data-n);position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;
+  border-radius:999px;background:var(--brand);color:var(--bgd);font-size:11px;line-height:19px;
+}
+.table-option.sel{background:var(--brand);color:var(--bgd);border-color:transparent}
+.modal-actions{display:flex;gap:8px;margin-top:12px}
+.modal-actions .btn{flex:1}
+
+/* ---------- Toast ---------- */
+/* Placé en haut : au bas de l'écran il recouvrirait « Envoyer ».
+   Masqué, il doit être totalement inerte, sinon il intercepte les appuis. */
+#toast{
+  position:fixed;left:50%;top:calc(62px + var(--pad-t));z-index:60;
+  transform:translateX(-50%) translateY(-14px);
+  opacity:0;visibility:hidden;pointer-events:none;
+  display:flex;align-items:center;gap:10px;width:max-content;max-width:min(94vw,520px);
+  background:var(--st);border:1px solid var(--brand);border-radius:12px;
+  padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.55);
+  transition:opacity .18s ease,transform .18s ease,visibility .18s;
+  font-size:14px;font-weight:700;
+}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto}
+#toast .msg{flex:1}
+#toast .btn{min-height:38px;padding:6px 12px;background:var(--brand);color:var(--bgd);font-size:14px}
+
+@media (min-width:700px){
+  :root{--namecol:110px;--gap:5px}
+  .tab{font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button id="tab-table" class="tab" type="button">Table --</button>
+  <div class="tabs" role="tablist">
+    <button id="tab-s" class="tab" role="tab" aria-selected="true" aria-controls="p-s" type="button">Saisie</button>
+    <button id="tab-g" class="tab" role="tab" aria-selected="false" aria-controls="p-g" type="button">Grill <span class="count" id="n-grill">0</span></button>
+    <button id="tab-t" class="tab" role="tab" aria-selected="false" aria-controls="p-t" type="button">Tickets <span class="count" id="n-tick">0</span></button>
   </div>
-  <div class="card"><div class="center"><button class="btn" data-pre="Côte">Côte: <span id="pre-co">0</span></button><button class="btn" data-pre="T-Bone">T-Bone: <span id="pre-tb">0</span></button><button class="btn" data-pre="Tmhk">Tmhk: <span id="pre-th">0</span></button><button class="btn" data-pre="Gigot">Gigot: <span id="pre-gi">0</span></button></div></div>
-  <table class="table" id="cmd"><thead><tr><th>Viande</th><th class="c1">Bleu</th><th class="c2">Saignant</th><th class="c3">À Point</th><th class="c4">Bien Cuit</th></tr></thead><tbody id="tb"></tbody></table>
-</section>
-<section id="p-t" class="panel"><div class="card"><h2 style="margin:0">Tickets – Commandes en cours</h2><div id="tickets" class="ticket-list"></div></div></section>
-<!-- Modal de sélection de table -->
+</div>
+
+<main>
+  <!-- SAISIE -->
+  <section id="p-s" class="panel active" role="tabpanel" aria-labelledby="tab-s">
+    <div class="pre" id="pre"></div>
+    <div class="scroll">
+      <div class="mgrid" id="grid" role="grid" aria-label="Quantités par viande et cuisson"></div>
+    </div>
+    <div class="actions">
+      <button id="undo" class="btn ghost" type="button" title="Annuler la dernière action" disabled>↶</button>
+      <button id="raz" class="btn danger" type="button" title="Vider la saisie">RAZ</button>
+      <button id="send" class="btn action" type="button">Envoyer <span class="n" id="send-n">0</span></button>
+    </div>
+  </section>
+
+  <!-- SYNTHÈSE GRILL -->
+  <section id="p-g" class="panel" role="tabpanel" aria-labelledby="tab-g">
+    <div class="sum-head"><span>À cuire — total des tickets ouverts</span><b id="sum-total">0</b></div>
+    <div class="scroll"><div id="summary"></div></div>
+  </section>
+
+  <!-- TICKETS -->
+  <section id="p-t" class="panel" role="tabpanel" aria-labelledby="tab-t">
+    <div class="scroll"><div id="tickets" class="ticket-list"></div></div>
+  </section>
+</main>
+
+<!-- Modale de sélection de table -->
 <div id="table-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="table-modal-title">
   <div class="modal-card">
     <h3 id="table-modal-title">Sélectionner une table</h3>
-    <div class="grid" id="table-grid"></div>
-    <div class="modal-actions"><button id="table-cancel" class="btn">Annuler</button></div>
+    <div class="tgrid" id="table-grid"></div>
+    <div class="modal-actions">
+      <button id="table-clear" class="btn ghost" type="button">Aucune</button>
+      <button id="table-cancel" class="btn ghost" type="button">Annuler</button>
+    </div>
   </div>
 </div>
+
+<div id="toast" role="status" aria-live="polite">
+  <span class="msg"></span>
+  <button class="btn" type="button" hidden></button>
+</div>
+
 <script>
-(()=>{
-  const VIANDES=["ETC","Côte","Bavette","T-Bone","Tmhk","Noix","TMHKW","RibCap","ChatB","Agneau","Magret","Poulet","Gigot"];
-  const CUIS=["Bleu","Saignant","À Point","Bien Cuit"]; const STK='gc_state_v1';
-  const TABLES=["1","2","3","4","5","55","6","7","8","9","11","12","14","15","16","17","18","19","21","22","23","24","25","30","31","32","33","34","35","36","37"];
-  const el=(s)=>document.querySelector(s), els=(s)=>[...document.querySelectorAll(s)];
-  const tb=el('#tb'), ticketsEl=el('#tickets');
-  const tableBtn=el('#tab-table');
-  const tableModal=el('#table-modal');
-  const tableGrid=el('#table-grid');
-  const tableCancel=el('#table-cancel');
-  let selectedTable="";
+(() => {
+  'use strict';
 
-  let data={}, timers=new Map();
-  let tickets=[], pre={"Côte":0,"T-Bone":0,"Tmhk":0, "Gigot":0};
-  const preRefs={"Côte":el('#pre-co'),"T-Bone":el('#pre-tb'),"Tmhk":el('#pre-th'),"Gigot":el('#pre-gi')};
-  const save=()=>localStorage.setItem(STK,JSON.stringify({tickets,pre,selectedTable}));
-  const load=()=>{try{const x=JSON.parse(localStorage.getItem(STK)||'{}');tickets=x.tickets||[];pre=Object.assign(pre,x.pre||{});selectedTable=x.selectedTable||"";if(selectedTable){tableBtn.textContent=`Table : ${selectedTable}`;}}catch{}};
-  const row=(v)=>`<tr><td><div class="cell name">${v}</div></td>${CUIS.map((c,i)=>`<td class="c${i+1}"><div class="cell" data-v="${v}" data-c="${c}">0</div></td>`).join('')}</tr>`;
-  const renderTable=()=>{tb.innerHTML=VIANDES.map(row).join('');data={};VIANDES.forEach(v=>data[v]={Bleu:0,Saignant:0,"À Point":0,"Bien Cuit":0});}
-  const renderTickets=()=>{ticketsEl.innerHTML=tickets.map(t=>`<div class="ticket"><header><div><strong>Table ${t.table}</strong> <span class="badge">${t.createdAt}</span></div><button class="btn action" data-done="${t.id}">Terminé</button></header><ul>${t.items.map(i=>`<li>${i.qty} × ${i.viande} – ${i.cuisson}</li>`).join('')}</ul></div>`).join('');};
+  /* ================= Configuration ================= */
+  // Libellés du grill : modifiez ces listes pour adapter la carte.
+  const VIANDES = ["ETC","Côte","Bavette","T-Bone","Tmhk","Noix","TMHKW","RibCap","ChatB","Agneau","Magret","Poulet","Gigot"];
+  const CUIS    = ["Bleu","Saignant","À Point","Bien Cuit"];
+  const TABLES  = ["1","2","3","4","5","55","6","7","8","9","11","12","14","15","16","17","18","19","21","22","23","24","25","30","31","32","33","34","35","36","37"];
+  // Viandes dont on suit un stock de pièces précuites.
+  const PRE_VIANDES = ["Côte","T-Bone","Tmhk","Gigot"];
 
-  // Onglets
-  const show=(p)=>{el('#p-s').classList.toggle('active',p==='s');el('#p-t').classList.toggle('active',p==='t');el('#tab-s').setAttribute('aria-selected',p==='s');el('#tab-t').setAttribute('aria-selected',p==='t');};
-  el('#tab-s').onclick=()=>show('s'); el('#tab-t').onclick=()=>show('t');
+  const LONG_MS   = 550;   // durée d'un appui long
+  const MOVE_TOL  = 12;    // px de tolérance avant d'annuler un appui (= défilement)
+  const WARN_MIN  = 8;     // ticket orange après N minutes
+  const HOT_MIN   = 15;    // ticket rouge après N minutes
+  const STORE     = 'gc_state_v2';
+  const STORE_V1  = 'gc_state_v1';
+  const MAX_UNDO  = 40;
 
-  // Sélecteur de table (modale grille)
-  function openTableModal(){
-    tableGrid.innerHTML = TABLES.map(t=>`<button class="table-option" data-t="${t}">${t}</button>`).join('');
-    tableModal.classList.remove('hidden');
+  /* ================= Utilitaires ================= */
+  const el  = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const haptic = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch {} };
+  const emptyDraft = () => Object.fromEntries(VIANDES.map(v => [v, [0,0,0,0]]));
+
+  // Un ticket enregistré peut dater d'une version antérieure de la carte :
+  // on le remet en forme plutôt que de laisser le rendu échouer.
+  function sanitizeTicket(t) {
+    if (!t || typeof t !== 'object') return null;
+    const items = (Array.isArray(t.items) ? t.items : [])
+      .map(i => ({
+        v: String(i && i.v || '?'),
+        c: Math.min(CUIS.length - 1, Math.max(0, +(i && i.c) || 0)),
+        qty: Math.max(0, +(i && i.qty) || 0),
+        done: !!(i && i.done)
+      }))
+      .filter(i => i.qty > 0);
+    if (!items.length) return null;
+    return {
+      id: t.id != null ? t.id : Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      ts: Number.isFinite(+t.ts) ? +t.ts : Date.now(),
+      table: String(t.table || '?'),
+      items
+    };
   }
-  function closeTableModal(){ tableModal.classList.add('hidden'); }
-  tableBtn.onclick=()=>openTableModal();
-  tableCancel.onclick=()=>closeTableModal();
-  tableGrid.addEventListener('click',(e)=>{const b=e.target.closest('.table-option'); if(!b) return; selectedTable=b.dataset.t; tableBtn.textContent=`Table : ${selectedTable}`; save(); closeTableModal(); if(el('#tab-t').getAttribute('aria-selected')==='true'){ show('s'); }});
-  tableModal.addEventListener('click',(e)=>{ if(e.target===tableModal) closeTableModal(); });
 
-  // Interactions cellules
-  const start=(e)=>{const d=e.target.closest('.cell'); if(!d||!d.dataset.c) return; const key=d.dataset.v+"|"+d.dataset.c; timers.set(key,setTimeout(()=>{data[d.dataset.v][d.dataset.c]=0; d.textContent=0; timers.delete(key);},700));};
-  const end=(e)=>{const d=e.target.closest('.cell'); if(!d||!d.dataset.c) return; const key=d.dataset.v+"|"+d.dataset.c; const t=timers.get(key); if(t){clearTimeout(t); timers.delete(key); let val=++data[d.dataset.v][d.dataset.c]; if(val>99) val=99; d.textContent=val;}};
-  el('#cmd').addEventListener('mousedown',start); el('#cmd').addEventListener('mouseup',end); el('#cmd').addEventListener('mouseleave',()=>{timers.forEach(clearTimeout); timers.clear();});
-  el('#cmd').addEventListener('touchstart',(e)=>{const t=e.target.closest('.cell'); if(!t||!t.dataset.c) return; e.preventDefault(); start(e);},{passive:false});
-  el('#cmd').addEventListener('touchend',(e)=>{const t=e.target.closest('.cell'); if(!t||!t.dataset.c) return; e.preventDefault(); end(e);},{passive:false});
-  el('#cmd').addEventListener('touchmove',(e)=>{if(e.target.closest('.cell')) e.preventDefault();},{passive:false});
+  /* ================= État ================= */
+  let state = {
+    selectedTable: "",
+    draft: emptyDraft(),               // draft[viande] = [q0,q1,q2,q3]
+    pre: Object.fromEntries(PRE_VIANDES.map(v => [v, 0])),
+    tickets: []                        // {id, ts, table, items:[{v, c, qty, done}]}
+  };
+  let undoStack = [];
+  let toastTimer = null;
 
-  // Bloque double-tap & dblclick zoom
-  let lastTouchEnd=0; document.addEventListener('touchend',(e)=>{const now=Date.now(); if(now-lastTouchEnd<300){ e.preventDefault(); } lastTouchEnd=now;},{passive:false});
-  document.addEventListener('dblclick',(e)=>{e.preventDefault();},{passive:false});
+  const snapshot = () => JSON.stringify({d: state.draft, p: state.pre, t: state.tickets, s: state.selectedTable});
 
-  // Précuisson
-  els('[data-pre]').forEach(b=>b.onclick=()=>{const v=b.dataset.pre; pre[v]++; preRefs[v].textContent=pre[v]; save();});
+  function pushUndo() {
+    undoStack.push(snapshot());
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    refreshUndoBtn();
+  }
+  function refreshUndoBtn() { el('#undo').disabled = undoStack.length === 0; }
 
-  // Envoyer
-  el('#send').onclick=()=>{
-    const table=selectedTable; if(!table) return alert("Sélectionne d'abord un numéro de table.");
-    const items=[]; for(const v in data){for(const c in data[v]){const q=data[v][c]; if(q>0){items.push({viande:v,cuisson:c,qty:q}); if(pre[v]!==undefined){pre[v]-=q; if(pre[v]<0) pre[v]=0; preRefs[v].textContent=pre[v];}}}}
-    if(!items.length) return alert('Aucune quantité sélectionnée.');
-    tickets.push({id:Date.now(),table,createdAt:new Date().toLocaleTimeString(),items}); save(); renderTickets(); show('t'); renderTable();
+  function undo() {
+    const snap = undoStack.pop();
+    if (!snap) return;
+    const x = JSON.parse(snap);
+    state.draft = x.d; state.pre = x.p; state.tickets = x.t; state.selectedTable = x.s;
+    save(); renderAll(); refreshUndoBtn(); haptic(15);
+    toast('Action annulée');
+  }
+
+  function save() {
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {}
+  }
+
+  function load() {
+    let raw = null;
+    try { raw = localStorage.getItem(STORE); } catch {}
+    if (raw) {
+      try {
+        const x = JSON.parse(raw);
+        state.selectedTable = x.selectedTable || "";
+        state.tickets = (Array.isArray(x.tickets) ? x.tickets : []).map(sanitizeTicket).filter(Boolean);
+        // Fusionne pour tolérer un changement de la liste des viandes.
+        const d = emptyDraft();
+        if (x.draft) for (const v in d) if (Array.isArray(x.draft[v])) d[v] = x.draft[v].map(n => +n || 0);
+        state.draft = d;
+        for (const v in state.pre) if (x.pre && x.pre[v] != null) state.pre[v] = +x.pre[v] || 0;
+      } catch {}
+      return;
+    }
+    // Migration depuis l'ancienne version (tickets + précuissons seulement).
+    try {
+      const old = JSON.parse(localStorage.getItem(STORE_V1) || 'null');
+      if (!old) return;
+      state.selectedTable = old.selectedTable || "";
+      for (const v in state.pre) if (old.pre && old.pre[v] != null) state.pre[v] = +old.pre[v] || 0;
+      state.tickets = (old.tickets || []).map(t => sanitizeTicket({
+        id: t.id,
+        ts: typeof t.id === 'number' ? t.id : Date.now(),   // l'ancien id était Date.now()
+        table: t.table,
+        items: (t.items || []).map(i => ({
+          v: i.viande,
+          c: Math.max(0, CUIS.indexOf(i.cuisson)),
+          qty: i.qty,
+          done: false
+        }))
+      })).filter(Boolean);
+      save();
+    } catch {}
+  }
+
+  /* ================= Toast ================= */
+  function toast(msg, actionLabel, onAction, ms = 4500) {
+    const box = el('#toast'), btn = box.querySelector('.btn');
+    box.querySelector('.msg').textContent = msg;
+    btn.hidden = !actionLabel;
+    if (actionLabel) { btn.textContent = actionLabel; btn.onclick = () => { hideToast(); onAction && onAction(); }; }
+    box.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, ms);
+  }
+  const hideToast = () => { el('#toast').classList.remove('show'); clearTimeout(toastTimer); };
+  window.__toast = toast;   // utilisé par le script de mise à jour PWA plus bas
+
+  /* ================= Rendu : grille de saisie ================= */
+  function buildGrid() {
+    const grid = el('#grid');
+    let html = '<div class="hd">Viande</div>' +
+      CUIS.map((c, i) => `<div class="hd c${i+1}" role="columnheader">${esc(c)}</div>`).join('');
+    html += VIANDES.map(v =>
+      `<div class="name" role="rowheader">${esc(v)}</div>` +
+      CUIS.map((c, i) =>
+        `<div class="cell c${i+1}" role="gridcell" tabindex="0" data-v="${esc(v)}" data-c="${i}"
+              aria-label="${esc(v)} ${esc(c)}"><span class="dot">·</span></div>`
+      ).join('')
+    ).join('');
+    grid.innerHTML = html;
+  }
+
+  function renderGrid() {
+    let total = 0;
+    for (const cell of el('#grid').querySelectorAll('.cell')) {
+      const q = state.draft[cell.dataset.v][+cell.dataset.c] || 0;
+      total += q;
+      cell.classList.toggle('has', q > 0);
+      cell.innerHTML = q > 0 ? String(q) : '<span class="dot">·</span>';
+      cell.setAttribute('aria-label', `${cell.dataset.v} ${CUIS[+cell.dataset.c]} : ${q}`);
+    }
+    el('#send-n').textContent = total;
+    el('#send').disabled = total === 0;
+    return total;
+  }
+
+  /* ================= Rendu : précuisson ================= */
+  function buildPre() {
+    el('#pre').innerHTML = PRE_VIANDES.map(v => `
+      <div class="pre-item" title="Pièces de ${esc(v)} déjà précuites">
+        <span class="lbl">${esc(v)}</span>
+        <div class="pre-row">
+          <button class="step" type="button" data-pre="${esc(v)}" data-d="-1" aria-label="Retirer une ${esc(v)} précuite">−</button>
+          <span class="val zero" data-preval="${esc(v)}">0</span>
+          <button class="step" type="button" data-pre="${esc(v)}" data-d="1" aria-label="Ajouter une ${esc(v)} précuite">+</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderPre() {
+    for (const v of PRE_VIANDES) {
+      const node = el(`[data-preval="${CSS.escape(v)}"]`);
+      if (!node) continue;
+      node.textContent = state.pre[v];
+      node.classList.toggle('zero', state.pre[v] === 0);
+    }
+  }
+
+  /* ================= Rendu : synthèse grill ================= */
+  function renderSummary() {
+    // Agrège les lignes non servies de tous les tickets ouverts.
+    const totals = {};   // viande -> [q,q,q,q]
+    const byTable = {};  // "viande|cuisson" -> [tables]
+    let grand = 0;
+    for (const t of state.tickets) {
+      for (const it of t.items) {
+        if (it.done) continue;
+        (totals[it.v] ||= [0,0,0,0])[it.c] += it.qty;
+        ((byTable[it.v + '|' + it.c] ||= [])).push(t.table);
+        grand += it.qty;
+      }
+    }
+    el('#sum-total').textContent = grand;
+    const nGrill = el('#n-grill');
+    nGrill.textContent = grand;
+    nGrill.classList.toggle('on', grand > 0);
+
+    // Ordre de la carte d'abord, puis toute viande d'un ancien ticket qui n'y
+    // figure plus — sans quoi ces pièces disparaîtraient silencieusement.
+    const known = VIANDES.filter(v => totals[v]);
+    const extra = Object.keys(totals).filter(v => !VIANDES.includes(v));
+    const rows = [...known, ...extra].filter(v => totals[v].some(q => q > 0));
+    if (!rows.length) {
+      el('#summary').innerHTML = `<div class="empty-state">Rien sur le grill.<br>Les commandes envoyées apparaissent ici, regroupées par cuisson.</div>`;
+      return;
+    }
+    const head = `<div class="sum-row head"><div class="hd">Viande</div>` +
+      CUIS.map((c, i) => `<div class="hd c${i+1}">${esc(c)}</div>`).join('') + `</div>`;
+    el('#summary').innerHTML = head + rows.map(v => `
+      <div class="sum-row">
+        <div class="name">${esc(v)}</div>
+        ${CUIS.map((c, i) => {
+          const q = totals[v][i];
+          if (!q) return `<div class="sum-cell empty">·</div>`;
+          // Rappelle quelles tables attendent ces pièces.
+          const tbl = [...new Set(byTable[v + '|' + i] || [])].join(' ');
+          return `<div class="sum-cell c${i+1}" title="${esc(v)} ${esc(c)} — tables ${esc(tbl)}">${q}<span class="tables">${esc(tbl)}</span></div>`;
+        }).join('')}
+      </div>`).join('');
+  }
+
+  /* ================= Rendu : tickets ================= */
+  const ageClass = (min) => min >= HOT_MIN ? 'hot' : (min >= WARN_MIN ? 'warn' : '');
+
+  function fmtAge(ms) {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const m = Math.floor(s / 60);
+    return m < 60 ? `${m}′${String(s % 60).padStart(2, '0')}` : `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`;
+  }
+
+  function renderTickets() {
+    const list = el('#tickets');
+    const sorted = [...state.tickets].sort((a, b) => a.ts - b.ts);  // le plus ancien en premier
+    const n = state.tickets.length;
+    const badge = el('#n-tick');
+    badge.textContent = n;
+    badge.classList.toggle('on', n > 0);
+
+    list.innerHTML = sorted.length ? sorted.map(t => {
+      const min = (Date.now() - t.ts) / 60000;
+      const allDone = t.items.every(i => i.done);
+      const cls = allDone ? 'served' : ageClass(min);
+      return `<div class="ticket ${cls}" data-id="${esc(t.id)}">
+        <header>
+          <span class="tnum">Table ${esc(t.table)}</span>
+          <span class="age" data-ts="${t.ts}">${fmtAge(Date.now() - t.ts)}</span>
+        </header>
+        <ul>${t.items.map((i, idx) => `
+          <li class="${i.done ? 'done' : ''}" data-idx="${idx}" role="button" tabindex="0">
+            <span class="q c${i.c+1}">${i.qty}</span>
+            <span class="txt">${esc(i.v)}<small>${esc(CUIS[i.c])}</small></span>
+          </li>`).join('')}</ul>
+        <footer>
+          <button class="btn ghost" type="button" data-act="del">Supprimer</button>
+          <button class="btn ${allDone ? 'done-all' : 'ghost'}" type="button" data-act="done">Terminé</button>
+        </footer>
+      </div>`;
+    }).join('')
+      : `<div class="empty-state">Aucun ticket en cours.<br>Saisissez une commande puis « Envoyer ».</div>`;
+  }
+
+  // Met à jour uniquement les minuteurs, sans reconstruire les cartes
+  // (préserve le défilement et les lignes cochées).
+  function tickAges() {
+    for (const node of el('#tickets').querySelectorAll('.age')) {
+      const ts = +node.dataset.ts;
+      const ms = Date.now() - ts;
+      node.textContent = fmtAge(ms);
+      const card = node.closest('.ticket');
+      if (card && !card.classList.contains('served')) {
+        card.classList.remove('warn', 'hot');
+        const c = ageClass(ms / 60000);
+        if (c) card.classList.add(c);
+      }
+    }
+  }
+
+  function renderTableBtn() {
+    const b = el('#tab-table');
+    b.textContent = state.selectedTable ? `Table ${state.selectedTable}` : 'Table --';
+    b.classList.toggle('set', !!state.selectedTable);
+  }
+
+  function renderAll() { renderGrid(); renderPre(); renderSummary(); renderTickets(); renderTableBtn(); }
+
+  /* ================= Onglets ================= */
+  function show(p) {
+    hideToast();   // la navigation vaut acquittement : il ne doit rien masquer
+    for (const [key, panel, tab] of [['s','#p-s','#tab-s'], ['g','#p-g','#tab-g'], ['t','#p-t','#tab-t']]) {
+      el(panel).classList.toggle('active', key === p);
+      el(tab).setAttribute('aria-selected', String(key === p));
+    }
+  }
+  el('#tab-s').onclick = () => show('s');
+  el('#tab-g').onclick = () => { renderSummary(); show('g'); };
+  el('#tab-t').onclick = () => { renderTickets(); show('t'); };
+
+  /* ================= Modale table ================= */
+  const modal = el('#table-modal');
+  function openTableModal() {
+    hideToast();
+    const busy = {};
+    for (const t of state.tickets) busy[t.table] = (busy[t.table] || 0) + 1;
+    el('#table-grid').innerHTML = TABLES.map(t =>
+      `<button class="table-option ${busy[t] ? 'busy' : ''} ${t === state.selectedTable ? 'sel' : ''}"
+               type="button" data-t="${esc(t)}" data-n="${busy[t] || ''}">${esc(t)}</button>`
+    ).join('');
+    modal.classList.remove('hidden');
+  }
+  const closeTableModal = () => modal.classList.add('hidden');
+
+  el('#tab-table').onclick = openTableModal;
+  el('#table-cancel').onclick = closeTableModal;
+  el('#table-clear').onclick = () => { state.selectedTable = ""; renderTableBtn(); save(); closeTableModal(); };
+  el('#table-grid').addEventListener('click', (e) => {
+    const b = e.target.closest('.table-option');
+    if (!b) return;
+    state.selectedTable = b.dataset.t;
+    renderTableBtn(); save(); closeTableModal(); show('s'); haptic(10);
+  });
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeTableModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTableModal(); });
+
+  /* ================= Saisie : appui court / appui long ================= */
+  // Appui court = +1 · appui long = remise à zéro de la case.
+  // Un déplacement du doigt annule l'appui pour laisser le défilement fonctionner.
+  let press = null;
+
+  function bump(cell, delta) {
+    const v = cell.dataset.v, c = +cell.dataset.c;
+    const next = Math.min(99, Math.max(0, state.draft[v][c] + delta));
+    if (next === state.draft[v][c]) return;
+    pushUndo();
+    state.draft[v][c] = next;
+    renderGrid(); save();
+  }
+
+  function resetCell(cell) {
+    const v = cell.dataset.v, c = +cell.dataset.c;
+    if (!state.draft[v][c]) return;
+    pushUndo();
+    state.draft[v][c] = 0;
+    renderGrid(); save();
+  }
+
+  function cancelPress() {
+    if (!press) return;
+    clearTimeout(press.timer);
+    press.cell.classList.remove('tap');
+    press = null;
+  }
+
+  const grid = el('#grid');
+  grid.addEventListener('pointerdown', (e) => {
+    const cell = e.target.closest('.cell');
+    if (!cell || e.button > 0) return;
+    cancelPress();
+    press = { cell, x: e.clientX, y: e.clientY, long: false, timer: null };
+    cell.classList.add('tap');
+    press.timer = setTimeout(() => {
+      if (!press) return;
+      press.long = true;
+      press.cell.classList.remove('tap');
+      resetCell(press.cell);
+      haptic(30);
+    }, LONG_MS);
+  });
+  grid.addEventListener('pointermove', (e) => {
+    if (!press) return;
+    if (Math.abs(e.clientX - press.x) > MOVE_TOL || Math.abs(e.clientY - press.y) > MOVE_TOL) cancelPress();
+  });
+  grid.addEventListener('pointerup', (e) => {
+    if (!press) return;
+    const wasLong = press.long, cell = press.cell;
+    clearTimeout(press.timer);
+    cell.classList.remove('tap');
+    press = null;
+    if (!wasLong && e.target.closest('.cell') === cell) { bump(cell, +1); haptic(8); }
+  });
+  grid.addEventListener('pointercancel', cancelPress);
+  grid.addEventListener('pointerleave', cancelPress);
+  // Clavier : Entrée/Espace = +1, Retour arrière/Suppr = remise à zéro.
+  grid.addEventListener('keydown', (e) => {
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); bump(cell, +1); }
+    else if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); resetCell(cell); }
+  });
+
+  /* ================= Précuisson ================= */
+  el('#pre').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-pre]');
+    if (!b) return;
+    const v = b.dataset.pre, d = +b.dataset.d;
+    const next = Math.min(99, Math.max(0, state.pre[v] + d));
+    if (next === state.pre[v]) return;
+    pushUndo();
+    state.pre[v] = next;
+    renderPre(); save(); haptic(8);
+  });
+
+  /* ================= Envoyer ================= */
+  el('#send').onclick = () => {
+    if (!state.selectedTable) { toast('Choisissez d’abord un numéro de table.', 'Choisir', openTableModal); haptic(40); return; }
+    const items = [];
+    for (const v of VIANDES) {
+      for (let c = 0; c < CUIS.length; c++) {
+        const qty = state.draft[v][c];
+        if (qty > 0) items.push({ v, c, qty, done: false });
+      }
+    }
+    if (!items.length) { toast('Aucune quantité saisie.'); return; }
+
+    pushUndo();
+    const table = state.selectedTable;
+    const nb = items.reduce((s, i) => s + i.qty, 0);
+    // Les pièces envoyées sortent du stock de précuisson.
+    for (const i of items) {
+      if (state.pre[i.v] != null) state.pre[i.v] = Math.max(0, state.pre[i.v] - i.qty);
+    }
+    state.tickets.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), ts: Date.now(), table, items });
+    state.draft = emptyDraft();
+    save(); renderAll(); haptic(25);
+    toast(`Table ${table} — ${nb} pièce${nb > 1 ? 's' : ''} envoyée${nb > 1 ? 's' : ''}`, 'Annuler', undo);
   };
 
-  // RAZ simple (cases)
-  let razTimer;
-  const razBtn = el('#raz');
-  razBtn.addEventListener('mousedown',()=>{
-    razTimer = setTimeout(()=>{
-      // Long press -> reset aussi précuissons
-      Object.keys(pre).forEach(k=>{pre[k]=0; preRefs[k].textContent=0;});
-      save();
-    },700);
-  });
-  razBtn.addEventListener('mouseup',()=>{
-    if(razTimer){
-      clearTimeout(razTimer);
-      // Court clic -> reset seulement tableau
-      renderTable();
+  /* ================= RAZ ================= */
+  el('#raz').onclick = () => {
+    const total = VIANDES.reduce((s, v) => s + state.draft[v].reduce((a, b) => a + b, 0), 0);
+    if (!total) { toast('La saisie est déjà vide.'); return; }
+    pushUndo();
+    state.draft = emptyDraft();
+    renderGrid(); save(); haptic(20);
+    toast('Saisie vidée', 'Annuler', undo);
+  };
+
+  el('#undo').onclick = undo;
+
+  /* ================= Actions sur les tickets ================= */
+  el('#tickets').addEventListener('click', (e) => {
+    const card = e.target.closest('.ticket');
+    if (!card) return;
+    const t = state.tickets.find(x => String(x.id) === card.dataset.id);
+    if (!t) return;
+
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'del' || act === 'done') {
+      pushUndo();
+      state.tickets = state.tickets.filter(x => x !== t);
+      save(); renderAll(); haptic(20);
+      toast(`Table ${t.table} ${act === 'done' ? 'servie' : 'supprimée'}`, 'Annuler', undo);
+      return;
+    }
+    // Coche une ligne servie sans fermer le ticket.
+    const li = e.target.closest('li[data-idx]');
+    if (li) {
+      pushUndo();
+      const it = t.items[+li.dataset.idx];
+      it.done = !it.done;
+      save(); renderAll(); haptic(8);
     }
   });
-  razBtn.addEventListener('mouseleave',()=>{ if(razTimer) clearTimeout(razTimer); });
-  razBtn.addEventListener('touchstart',(e)=>{
-    e.preventDefault();
-    razTimer = setTimeout(()=>{
-      Object.keys(pre).forEach(k=>{pre[k]=0; preRefs[k].textContent=0;});
-      save();
-    },700);
-  },{passive:false});
-  razBtn.addEventListener('touchend',(e)=>{
-    e.preventDefault();
-    if(razTimer){
-      clearTimeout(razTimer);
-      renderTable();
-    }
-  },{passive:false});
+  el('#tickets').addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('li[data-idx]')) { e.preventDefault(); e.target.click(); }
+  });
 
-  // Tickets terminé
-  ticketsEl.addEventListener('click',(e)=>{const id=e.target.dataset.done; if(!id) return; tickets=tickets.filter(t=>t.id!=id); save(); renderTickets();});
-
-  // Init
-  load(); renderTable(); Object.keys(pre).forEach(k=>preRefs[k]&&(preRefs[k].textContent=pre[k])); renderTickets();
+  /* ================= Init ================= */
+  load();
+  buildGrid();
+  buildPre();
+  renderAll();
+  refreshUndoBtn();
+  setInterval(tickAges, 1000);
+  // Sauvegarde de sécurité si l'app est mise en arrière-plan / fermée.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  window.addEventListener('pagehide', save);
 })();
 </script>
+
 <script>
-(function(){
-  const manifest = {name: "Gestion des Commandes",short_name: "Commandes",start_url: ".",display: "standalone",background_color: "#081420",theme_color: "#13314D",icons: []};
-  const link = document.getElementById('manifest-link');
-  if (link && (!link.href || link.getAttribute('href')==="#")){
-    const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
-    link.href = URL.createObjectURL(manifestBlob);
-  }
-  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
-    const swUrl = new URL('sw.js', location.href).toString();
-    fetch(swUrl, {cache:'no-store'}).then(r=>{
-      if(!r.ok){ console.warn('[PWA] sw.js introuvable, enregistrement ignoré.'); return; }
-      navigator.serviceWorker.register(swUrl, {scope:'./'})
-        .then(()=>console.log('[PWA] Service worker enregistré.'))
-        .catch(err=>console.error('[PWA] Échec enregistrement SW:', err));
-    }).catch(()=>console.warn('[PWA] Impossible de charger sw.js; SW non activé.'));
-  } else {
-    console.warn('[PWA] SW désactivé (origine non HTTP/HTTPS ou API indisponible).');
-  }
+/* ---------- PWA : installation et fonctionnement hors-ligne ---------- */
+(function () {
+  if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+
+  // Une mise à jour n'est jamais appliquée sans accord : un rechargement
+  // en plein service ferait perdre le geste en cours.
+  let accepted = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (accepted) location.reload();
+  });
+
+  window.addEventListener('load', async () => {
+    let reg;
+    try {
+      reg = await navigator.serviceWorker.register(new URL('sw.js', location.href), { scope: './' });
+    } catch (err) {
+      console.warn('[PWA] Service worker non enregistré :', err.message);
+      return;
+    }
+    const offerUpdate = (worker) => {
+      const apply = () => { accepted = true; worker.postMessage('skip-waiting'); };
+      if (window.__toast) window.__toast('Nouvelle version disponible', 'Recharger', apply, 15000);
+    };
+    if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting);
+    reg.addEventListener('updatefound', () => {
+      const w = reg.installing;
+      if (!w) return;
+      w.addEventListener('statechange', () => {
+        if (w.state === 'installed' && navigator.serviceWorker.controller) offerUpdate(w);
+      });
+    });
+  });
 })();
 </script>
-    <!-- ... ton code existant ... -->
-
-  <script>
-  function resizeApp() {
-    const app = document.body; // ou document.getElementById('app') si tu encadres ton contenu
-    const w = app.scrollWidth;
-    const h = app.scrollHeight;
-    const scale = Math.min(window.innerWidth / w, window.innerHeight / h, 1);
-    app.style.transform = `scale(${scale})`;
-    app.style.transformOrigin = "top left";
-    app.style.width = w + "px";
-    app.style.height = h + "px";
-  }
-
-  window.addEventListener("resize", resizeApp);
-  window.addEventListener("orientationchange", resizeApp);
-  window.addEventListener("load", resizeApp);
-  </script>
 </body>
 </html>
-
-
-</body>
-</html>
-
-</body></html

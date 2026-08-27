@@ -1,0 +1,13 @@
+{
+  "name": "grill-commandes",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Aide-mémoire des commandes au grill : saisie par table, synthèse des cuissons et suivi des tickets.",
+  "scripts": {
+    "test": "node test/app.test.js && node test/robustesse.test.js",
+    "start": "node -e \"require('./test/serve').start(8899).then(s=>console.log('Application servie sur '+s.base))\""
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
+  }
+}
