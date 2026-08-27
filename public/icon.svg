@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Grill">
+  <rect width="512" height="512" rx="104" fill="#141C2A"/>
+  <!-- braises -->
+  <g opacity=".92">
+    <ellipse cx="152" cy="378" rx="34" ry="14" fill="#AA3023"/>
+    <ellipse cx="256" cy="392" rx="44" ry="17" fill="#CE7950"/>
+    <ellipse cx="360" cy="378" rx="34" ry="14" fill="#AA3023"/>
+  </g>
+  <!-- grille -->
+  <g stroke="#E8A63C" stroke-width="19" stroke-linecap="round">
+    <line x1="106" y1="272" x2="406" y2="272"/>
+    <line x1="106" y1="320" x2="406" y2="320"/>
+  </g>
+  <!-- pièce de viande -->
+  <path d="M184 250c-34 0-58-24-56-53 3-38 44-63 96-63 60 0 108 26 108 62 0 32-30 54-74 54z" fill="#934F00"/>
+  <path d="M198 218c-14-4-18-20-6-30 14-12 44-17 68-11 20 5 27 20 15 30-14 12-59 15-77 11z" fill="#CE7950"/>
+</svg>
