@@ -128,8 +128,27 @@ projet ne peuvent donc ni lire ni modifier vos commandes.
 6. Redéployer. L'application demande alors le code au premier lancement de
    chaque téléphone, puis mémorise la session.
 
-La clé `anon` est faite pour être publique : elle ne donne accès à rien sans
-le code, puisque la règle d'accès ne reconnaît que le compte du restaurant.
+#### « Public prefixes expose values to the browser »
+
+Vercel affiche cet avertissement sur les deux variables, parce que le préfixe
+`VITE_` les rend lisibles dans le navigateur. C'est voulu, et il faut le
+garder : **choisissez l'option « Config »**, ne retirez pas le préfixe.
+
+L'application est un site statique, sans partie serveur : tout ce dont elle a
+besoin pour joindre Supabase est forcément dans le navigateur. Vite n'expose
+d'ailleurs au code client que les variables préfixées `VITE_` — retirer le
+préfixe rendrait simplement les valeurs invisibles au build, et l'application
+retomberait en mode local sans partage, silencieusement.
+
+La clé `anon` est justement conçue pour être publique : elle identifie le
+projet, elle n'autorise rien par elle-même. C'est la règle d'accès en base qui
+protège les données, et elle ne reconnaît que le compte du restaurant — c'est
+ce que vérifie `test/schema.test.sh`, en confirmant qu'un autre compte du même
+projet ne peut ni lire, ni écrire, ni supprimer les commandes.
+
+En revanche, la clé **`service_role`** contourne toutes les règles d'accès :
+celle-là ne doit jamais être placée dans une variable `VITE_`, ni communiquée
+à qui que ce soit.
 
 Si vous préférez une autre adresse que `service@grill.local`, changez-la aux
 trois endroits : dans le compte Supabase, dans la règle d'accès de
