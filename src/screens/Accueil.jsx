@@ -68,6 +68,23 @@ function Partage({ etat }) {
   return <span className="lien-etat ok" title="Commandes partagées avec les autres téléphones"><i /> Partagé</span>;
 }
 
+/* Un refus du serveur n'est pas une coupure réseau : le dire clairement évite
+   de chercher un problème de wifi quand la base n'est pas encore installée.
+   Le message disparaît de lui-même dès qu'un échange aboutit. */
+function Anomalie({ etat }) {
+  if (!etat?.actif || !etat.erreur) return null;
+  const tableAbsente = /grill_commandes|does not exist|schema cache/i.test(etat.erreur);
+  return (
+    <div className="anomalie" role="alert">
+      <strong>Le partage ne fonctionne pas.</strong>{' '}
+      {tableAbsente
+        ? 'La table n’existe pas encore : lancez supabase/schema.sql dans le SQL Editor de Supabase.'
+        : etat.erreur}
+      <span className="note">Les commandes continuent d’être enregistrées sur ce téléphone.</span>
+    </div>
+  );
+}
+
 export default function Accueil({ commandes, etatSync, onNouvelle, onServir, onStats }) {
   const maintenant = useHorloge(1000);
   const pieces = commandes.reduce((s, c) => s + c.lignes.reduce((n, l) => n + l.qte, 0), 0);
@@ -104,6 +121,7 @@ export default function Accueil({ commandes, etatSync, onNouvelle, onServir, onS
 
       <div className="content">
         <div className="inner">
+          <Anomalie etat={etatSync} />
           {commandes.length === 0 ? (
             <div className="empty">
               <div className="big">🔥</div>

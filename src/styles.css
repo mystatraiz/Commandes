@@ -788,3 +788,18 @@ table.data td { text-align: right; font-weight: 700; color: var(--ink-soft); }
   .connexion-logo { width: 44px; height: 44px; }
   .connexion-carte h1 { font-size: 18px; }
 }
+
+/* Anomalie de partage : visible sans être bloquante — la prise de commande
+   continue de fonctionner pendant ce temps. */
+.anomalie {
+  background: rgba(229,72,77,.12);
+  box-shadow: inset 0 0 0 1px rgba(229,72,77,.42);
+  color: #FFC9CA;
+  border-radius: var(--r-md);
+  padding: 11px 13px;
+  margin-bottom: 12px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.anomalie strong { color: #FF8E91; }
+.anomalie .note { display: block; margin-top: 5px; color: var(--ink-mute); font-size: 12.5px; }
