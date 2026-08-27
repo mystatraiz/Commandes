@@ -214,7 +214,13 @@ npm test
 - `test/partage.test.cjs` — **deux navigateurs jouant deux téléphones** face à
   un faux serveur Supabase (`test/faux-supabase.cjs`) : code d'accès,
   propagation d'une commande d'un appareil à l'autre, coupure réseau, saisie
-  hors ligne et rattrapage au retour, reprise par un appareil qui rejoint.
+  hors ligne et rattrapage au retour, reprise par un appareil qui rejoint ;
+- `test/schema.test.sh` — `supabase/schema.sql` exécuté sur un vrai
+  PostgreSQL : le script passe et se rejoue sans erreur, l'horodatage
+  d'arbitrage vient bien de la base, et surtout **un autre compte du même
+  projet ne peut ni lire, ni écrire, ni supprimer les commandes**. C'est la
+  vérification qui rend sûre l'installation dans un projet déjà utilisé. Sans
+  PostgreSQL local, ce test s'annonce ignoré au lieu d'échouer.
 
 Le faux serveur ne simule volontairement pas le temps réel : cela vérifie du
 même coup que la synchronisation périodique suffit quand le websocket ne passe

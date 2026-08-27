@@ -8,9 +8,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test/fusion.test.cjs && node test/app.test.cjs && npm run test:partage",
+    "test": "node test/fusion.test.cjs && node test/app.test.cjs && npm run test:partage && npm run test:schema",
     "build:test": "vite build --outDir dist-test",
-    "test:partage": "VITE_SUPABASE_URL=http://127.0.0.1:54321 VITE_SUPABASE_ANON_KEY=cle-de-test VITE_SYNC_MS=1500 npm run build:test && node test/partage.test.cjs"
+    "test:partage": "VITE_SUPABASE_URL=http://127.0.0.1:54321 VITE_SUPABASE_ANON_KEY=cle-de-test VITE_SYNC_MS=1500 npm run build:test && node test/partage.test.cjs",
+    "test:schema": "bash test/schema.test.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",
