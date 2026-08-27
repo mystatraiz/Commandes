@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RETENTION_JOURS, TABLES } from './config.js';
 import * as db from './db.js';
+import * as sync from './sync.js';
+import { partageActif, sessionCourante, supabase } from './supabase.js';
 import Accueil from './screens/Accueil.jsx';
 import ChoixTable from './screens/ChoixTable.jsx';
+import Connexion from './screens/Connexion.jsx';
 import Saisie from './screens/Saisie.jsx';
 import Stats from './screens/Stats.jsx';
 import Toast from './components/Toast.jsx';
@@ -21,6 +24,8 @@ export default function App() {
 
   const [commandes, setCommandes] = useState([]);   // uniquement celles en cours
   const [pret, setPret] = useState(false);
+  const [connecte, setConnecte] = useState(!partageActif);   // sans partage, rien à demander
+  const [etatSync, setEtatSync] = useState(sync.etatSync());
   const [brouillon, setBrouillon] = useState(BROUILLON_VIDE);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(0);
@@ -53,17 +58,46 @@ export default function App() {
     });
   }, []);
 
-  /* ---------------- Chargement ---------------- */
+  /* ---------------- Messages ---------------- */
+
+  const montrerToast = useCallback((texte, action) => {
+    clearTimeout(toastTimer.current);
+    setToast({ texte, action });
+    toastTimer.current = setTimeout(() => setToast(null), action ? 6000 : 3200);
+  }, []);
+  const fermerToast = useCallback(() => { clearTimeout(toastTimer.current); setToast(null); }, []);
+
+  /* ---------------- Lecture des commandes en cours ---------------- */
+
+  const recharger = useCallback(async () => {
+    const toutes = await db.toutesLesCommandes();
+    setCommandes(
+      toutes.filter((c) => c.statut === 'en_cours').sort((a, b) => a.creeeA - b.creeeA),
+    );
+  }, []);
+
+  /** Écrit localement puis pousse : l'écriture locale ne dépend jamais du réseau. */
+  const enregistrer = useCallback(async (cmd) => {
+    await db.enregistrer({ ...cmd, majA: Date.now(), synchro: false });
+    await recharger();
+    sync.synchroniser();
+  }, [recharger]);
+
+  /* ---------------- Démarrage ---------------- */
 
   useEffect(() => {
     let vivant = true;
     (async () => {
-      const toutes = await db.toutesLesCommandes();
+      if (partageActif) {
+        const session = await sessionCourante();
+        if (!vivant) return;
+        if (!session) { setPret(true); setConnecte(false); return; }
+        setConnecte(true);
+      }
+      await recharger();
       if (!vivant) return;
-      setCommandes(
-        toutes.filter((c) => c.statut === 'en_cours').sort((a, b) => a.creeeA - b.creeeA),
-      );
       setPret(true);
+
       // Un brouillon signifie que l'application s'est arrêtée en pleine saisie.
       const b = db.lireBrouillon();
       if (b && (b.table || b.lignes.length)) {
@@ -75,6 +109,24 @@ export default function App() {
     })();
     return () => { vivant = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connecte]);
+
+  // Synchronisation : démarre une fois connecté, et rafraîchit l'écran dès
+  // qu'une commande arrive d'un autre téléphone.
+  useEffect(() => {
+    if (!partageActif || !connecte) return;
+    const desabonner = sync.surChangement((e) => { setEtatSync(e); recharger(); });
+    sync.demarrer();
+    return () => { desabonner(); };
+  }, [connecte, recharger]);
+
+  // Une session expirée ramène à l'écran du code plutôt qu'à une page muette.
+  useEffect(() => {
+    if (!partageActif || !supabase) return;
+    const { data } = supabase.auth.onAuthStateChange((evenement) => {
+      if (evenement === 'SIGNED_OUT') { sync.arreter(); setConnecte(false); }
+    });
+    return () => data.subscription.unsubscribe();
   }, []);
 
   // Le brouillon est réécrit à chaque geste : c'est lui qui sauve la saisie
@@ -83,15 +135,6 @@ export default function App() {
     if (!pret) return;
     db.ecrireBrouillon(brouillon.table || brouillon.lignes.length ? brouillon : null);
   }, [brouillon, pret]);
-
-  /* ---------------- Messages ---------------- */
-
-  const montrerToast = useCallback((texte, action) => {
-    clearTimeout(toastTimer.current);
-    setToast({ texte, action });
-    toastTimer.current = setTimeout(() => setToast(null), action ? 6000 : 3200);
-  }, []);
-  const fermerToast = useCallback(() => { clearTimeout(toastTimer.current); setToast(null); }, []);
 
   /* ---------------- Saisie d'une commande ---------------- */
 
@@ -139,15 +182,14 @@ export default function App() {
       servieA: null,
       statut: 'en_cours',
     };
-    await db.enregistrer(cmd);
-    setCommandes((c) => [...c, cmd]);
     setBrouillon(BROUILLON_VIDE);
     db.ecrireBrouillon(null);
+    await enregistrer(cmd);
     vibrer(24);
     allerAccueil();
     const n = cmd.lignes.reduce((s, l) => s + l.qte, 0);
     montrerToast(`Table ${cmd.table} — ${n} pièce${n > 1 ? 's' : ''}`);
-  }, [brouillon, allerAccueil, montrerToast]);
+  }, [brouillon, allerAccueil, montrerToast, enregistrer]);
 
   const abandonner = useCallback(() => {
     setBrouillon(BROUILLON_VIDE);
@@ -160,29 +202,33 @@ export default function App() {
   const servir = useCallback(async (id) => {
     const cmd = commandes.find((c) => c.id === id);
     if (!cmd) return;
-    const servie = { ...cmd, statut: 'servie', servieA: Date.now() };
-    await db.enregistrer(servie);           // conservée pour les statistiques
-    setCommandes((c) => c.filter((x) => x.id !== id));
+    await enregistrer({ ...cmd, statut: 'servie', servieA: Date.now() });
     vibrer(18);
     montrerToast(`Table ${cmd.table} servie`, {
       libelle: 'Annuler',
-      faire: async () => {
-        const reprise = { ...cmd, statut: 'en_cours', servieA: null };
-        await db.enregistrer(reprise);
-        setCommandes((c) => [...c, reprise].sort((a, b) => a.creeeA - b.creeeA));
-      },
+      faire: () => enregistrer({ ...cmd, statut: 'en_cours', servieA: null }),
     });
-  }, [commandes, montrerToast]);
+  }, [commandes, montrerToast, enregistrer]);
 
   /* ---------------- Rendu ---------------- */
 
   if (!pret) return <div className="app" />;
+
+  if (partageActif && !connecte) {
+    return (
+      <div className="app">
+        <Connexion onConnecte={() => setConnecte(true)} />
+        <MajPWA />
+      </div>
+    );
+  }
 
   return (
     <div className="app">
       {ecran === 'accueil' && (
         <Accueil
           commandes={commandes}
+          etatSync={etatSync}
           onNouvelle={commencer}
           onServir={servir}
           onStats={() => pousser('stats')}

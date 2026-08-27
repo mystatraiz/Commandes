@@ -4,3 +4,4 @@ dev-dist/
 test/captures/
 .vercel
 .DS_Store
+dist-test/

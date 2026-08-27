@@ -90,8 +90,18 @@ ul, ol { list-style: none; padding: 0; }
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
 }
-.topbar .title { font-size: 19px; font-weight: 750; letter-spacing: -.35px; flex: 1; min-width: 0; }
-.topbar .sub { display: block; font-size: 12px; font-weight: 600; color: var(--ink-mute); letter-spacing: 0; }
+.topbar .title {
+  font-size: 19px; font-weight: 750; letter-spacing: -.35px;
+  flex: 1 1 auto; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Tronqué plutôt que replié : l'indicateur de partage à côté ferait sinon
+   passer le sous-titre sur trois lignes et grandir la barre. */
+.topbar .sub {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--ink-mute); letter-spacing: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 .content {
   flex: 1 1 auto;
@@ -709,4 +719,72 @@ table.data td { text-align: right; font-weight: 700; color: var(--ink-soft); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* ============================================================
+   Partage entre téléphones
+   ============================================================ */
+
+.lien-etat {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.lien-etat i { width: 7px; height: 7px; border-radius: 99px; background: currentColor; flex: 0 0 auto; }
+.lien-etat.ok      { color: var(--ok); }
+.lien-etat.hors    { color: var(--ink-mute); }
+.lien-etat.attente { color: var(--warn); background: rgba(232,166,60,.14); }
+
+/* Écran du code d'accès */
+.connexion {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.connexion-carte {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-3), inset 0 0 0 1px var(--line);
+  padding: 26px 22px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.connexion-logo { align-self: center; border-radius: 16px; }
+.connexion-carte h1 { font-size: 21px; font-weight: 800; letter-spacing: -.4px; }
+.connexion-carte .lede { font-size: 14px; color: var(--ink-mute); line-height: 1.5; margin-bottom: 4px; }
+.champ {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 1px;
+}
+.champ:focus { outline: none; border-color: var(--accent); }
+.erreur { color: #FF8E91; font-size: 14px; font-weight: 700; }
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .connexion-carte { padding: 18px 20px; gap: 9px; }
+  .connexion-logo { width: 44px; height: 44px; }
+  .connexion-carte h1 { font-size: 18px; }
 }

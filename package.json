@@ -8,9 +8,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test/app.test.cjs"
+    "test": "node test/fusion.test.cjs && node test/app.test.cjs && npm run test:partage",
+    "build:test": "vite build --outDir dist-test",
+    "test:partage": "VITE_SUPABASE_URL=http://127.0.0.1:54321 VITE_SUPABASE_ANON_KEY=cle-de-test VITE_SYNC_MS=1500 npm run build:test && node test/partage.test.cjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

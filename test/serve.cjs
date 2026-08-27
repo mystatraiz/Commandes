@@ -3,7 +3,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..', 'dist');
+
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -14,7 +14,8 @@ const TYPES = {
   '.png': 'image/png',
 };
 
-function start(port = 0) {
+function start(port = 0, dossier = 'dist') {
+  const ROOT = path.join(__dirname, '..', dossier);
   const server = http.createServer((req, res) => {
     const rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     let file = path.join(ROOT, rel === '/' ? 'index.html' : rel);

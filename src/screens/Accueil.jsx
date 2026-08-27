@@ -51,7 +51,24 @@ function Commande({ cmd, maintenant, onServir }) {
   );
 }
 
-export default function Accueil({ commandes, onNouvelle, onServir, onStats }) {
+/* État du partage : discret quand tout va bien, visible dès que des commandes
+   attendent d'être transmises — c'est le moment où il faut le savoir. */
+function Partage({ etat }) {
+  if (!etat?.actif) return null;
+  if (etat.enAttente > 0) {
+    return (
+      <span className="lien-etat attente" title="Commandes prises hors ligne, en attente d’envoi">
+        <i /> {etat.enAttente} en attente
+      </span>
+    );
+  }
+  if (!etat.connecte) {
+    return <span className="lien-etat hors" title="Hors ligne — la saisie continue normalement"><i /> Hors ligne</span>;
+  }
+  return <span className="lien-etat ok" title="Commandes partagées avec les autres téléphones"><i /> Partagé</span>;
+}
+
+export default function Accueil({ commandes, etatSync, onNouvelle, onServir, onStats }) {
   const maintenant = useHorloge(1000);
   const pieces = commandes.reduce((s, c) => s + c.lignes.reduce((n, l) => n + l.qte, 0), 0);
 
@@ -66,6 +83,7 @@ export default function Accueil({ commandes, onNouvelle, onServir, onStats }) {
               : 'Aucune commande en cours'}
           </span>
         </h1>
+        <Partage etat={etatSync} />
         <button className="btn btn-ghost btn-icon" type="button" onClick={onStats} aria-label="Statistiques">
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <rect x="3" y="12" width="4.2" height="8" rx="1.4" fill="currentColor" />
