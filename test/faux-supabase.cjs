@@ -53,7 +53,7 @@ function start(port = 0) {
       if (url.pathname.startsWith('/auth/v1/')) return json(res, 200, {});
 
       // ---- REST ----
-      if (url.pathname === '/rest/v1/commandes') {
+      if (url.pathname === '/rest/v1/grill_commandes') {
         if (req.method === 'GET') {
           let sortie = [...lignes.values()];
           const filtre = url.searchParams.get('maj_a');       // ex. « gte.2026-... »

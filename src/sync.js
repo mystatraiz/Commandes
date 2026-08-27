@@ -9,7 +9,7 @@
    une commande saisie hors ligne attend son tour, elle n'est pas écrasée. */
 
 import * as db from './db.js';
-import { supabase, partageActif } from './supabase.js';
+import { supabase, partageActif, TABLE } from './supabase.js';
 import { arbitrer, versLocal, versServeur } from './lib/fusion.js';
 
 const CLE_DERNIERE_SYNC = 'grill.derniereSync';
@@ -76,7 +76,7 @@ async function pousser() {
   if (!aPousser.length) return true;
 
   const { data, error } = await supabase
-    .from('commandes')
+    .from(TABLE)
     .upsert(aPousser.map(versServeur))
     .select();
 
@@ -98,7 +98,7 @@ async function tirer() {
 
   // Premier contact : on prend les commandes les plus récemment touchées, sans
   // filtre de date. Ensuite seulement, on avance de façon incrémentale.
-  const requete = supabase.from('commandes').select('*');
+  const requete = supabase.from(TABLE).select('*');
   const { data, error } = depuis === null
     ? await requete.order('maj_a', { ascending: false }).limit(REPRISE_MAX)
     : await requete.gte('maj_a', new Date(depuis).toISOString()).order('maj_a', { ascending: true });
@@ -172,7 +172,7 @@ export async function demarrer() {
       .channel('commandes-partagees')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'commandes' },
+        { event: '*', schema: 'public', table: TABLE },
         async (message) => {
           if (message.eventType === 'DELETE') {
             if (message.old?.id) { await db.supprimer(message.old.id); prevenir(); }

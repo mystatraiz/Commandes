@@ -14,6 +14,10 @@ const CLE = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // l'identifiant, lui, est fixe et n'a pas à être saisi.
 export const COMPTE_PARTAGE = import.meta.env.VITE_SUPABASE_COMPTE || 'service@grill.local';
 
+// Préfixée pour cohabiter sans risque avec un projet Supabase déjà utilisé
+// par une autre application. Doit rester en phase avec supabase/schema.sql.
+export const TABLE = 'grill_commandes';
+
 export const partageActif = Boolean(URL && CLE);
 
 export const supabase = partageActif

@@ -89,15 +89,33 @@ quand des commandes prises hors ligne n'ont pas encore été transmises.
 
 ### Mettre en place le serveur
 
-1. Créer un projet sur [supabase.com](https://supabase.com) (offre gratuite,
-   largement suffisante ici).
-2. Dans le projet, ouvrir **SQL Editor**, coller le contenu de
-   `supabase/schema.sql` et lancer. Cela crée la table, les index, la règle
-   d'accès et la diffusion en temps réel.
-3. Ouvrir **Authentication → Users → Add user** et créer l'unique compte
-   partagé : l'adresse `service@grill.local` et, comme mot de passe, le **code
-   d'accès** que vous distribuerez à l'équipe. Cochez la confirmation
-   automatique de l'adresse si elle est proposée.
+L'offre gratuite de Supabase donne droit à **deux projets actifs, tous
+comptes et organisations confondus** — créer une nouvelle organisation ne
+débloque rien. Ce n'est pas un obstacle : l'application n'a besoin que d'une
+table, et **elle peut s'installer dans un projet que vous utilisez déjà**,
+sans le perturber.
+
+Tout est prévu pour cette cohabitation : la table s'appelle
+`grill_commandes` et la fonction interne est préfixée de la même façon, donc
+aucune collision avec vos objets existants ; le script ne modifie rien de ce
+qui s'y trouve déjà. Le volume est négligeable — une commande pèse environ
+200 octets, soit quelques mégaoctets par an, face aux 500 Mo de l'offre
+gratuite.
+
+Le point qui compte vraiment est l'accès : la règle n'autorise pas « tout
+compte connecté au projet », mais uniquement l'adresse du compte du
+restaurant. Les utilisateurs de l'autre application hébergée sur le même
+projet ne peuvent donc ni lire ni modifier vos commandes.
+
+1. Ouvrir un de vos projets Supabase existants (ou en créer un si vous avez
+   un emplacement libre).
+2. Dans **SQL Editor**, coller le contenu de `supabase/schema.sql` et lancer.
+   Cela crée la table, les index, la règle d'accès et la diffusion en temps
+   réel.
+3. Ouvrir **Authentication → Users → Add user** et créer le compte partagé :
+   l'adresse `service@grill.local` et, comme mot de passe, le **code d'accès**
+   que vous distribuerez à l'équipe. Cochez la confirmation automatique de
+   l'adresse si elle est proposée.
 4. Dans **Project Settings → API**, relever l'URL du projet et la clé
    publique (`anon`).
 5. Dans Vercel, **Settings → Environment Variables**, ajouter :
@@ -110,9 +128,12 @@ quand des commandes prises hors ligne n'ont pas encore été transmises.
 6. Redéployer. L'application demande alors le code au premier lancement de
    chaque téléphone, puis mémorise la session.
 
-La clé `anon` est faite pour être publique : elle ne donne accès à rien sans le
-code, puisque la règle d'accès de la table n'autorise que les appareils
-connectés.
+La clé `anon` est faite pour être publique : elle ne donne accès à rien sans
+le code, puisque la règle d'accès ne reconnaît que le compte du restaurant.
+
+Si vous préférez une autre adresse que `service@grill.local`, changez-la aux
+trois endroits : dans le compte Supabase, dans la règle d'accès de
+`supabase/schema.sql`, et via la variable `VITE_SUPABASE_COMPTE`.
 
 **Sans ces deux variables, rien ne change** : l'application fonctionne comme
 avant, chaque téléphone gardant ses commandes pour lui. C'est aussi ce qui
