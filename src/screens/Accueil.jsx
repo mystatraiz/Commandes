@@ -85,7 +85,7 @@ function Anomalie({ etat }) {
   );
 }
 
-export default function Accueil({ commandes, etatSync, onNouvelle, onServir, onStats }) {
+export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onServir, onStats }) {
   const maintenant = useHorloge(1000);
   const pieces = commandes.reduce((s, c) => s + c.lignes.reduce((n, l) => n + l.qte, 0), 0);
 
@@ -111,12 +111,22 @@ export default function Accueil({ commandes, etatSync, onNouvelle, onServir, onS
       </header>
 
       <div className="newbar">
-        <button className="btn btn-primary btn-lg btn-block" type="button" onClick={onNouvelle}>
+        <button className="btn btn-primary btn-lg" style={{ flex: 1 }} type="button" onClick={onNouvelle}>
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
           </svg>
           Nouvelle commande
         </button>
+        {/* Absent là où le navigateur ne sait pas dicter : mieux vaut pas de
+            bouton qu'un bouton qui échoue. */}
+        {onDicter && (
+          <button className="btn btn-lg mic" type="button" onClick={onDicter} aria-label="Dicter la commande">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="9" y="2.5" width="6" height="11" rx="3" fill="currentColor" />
+              <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="content">

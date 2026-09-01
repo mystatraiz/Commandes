@@ -32,6 +32,48 @@ par l'écran des couleurs.
 **Envoyer** ramène à l'accueil, où la commande vient s'inscrire sous les
 précédentes, chronomètre lancé.
 
+## Dictée vocale
+
+Le bouton micro, à côté de « Nouvelle commande », permet de dicter :
+« table 12, deux côtes saignantes et un poulet ». Sont compris les numéros de
+table en chiffres comme en toutes lettres (y compris composés : « cinquante
+cinq », « deux cent un »), les quantités, les pluriels, et les formulations
+inversées (« saignant, une côte »).
+
+**Ce qui est dicté n'est jamais envoyé directement.** L'écran suivant affiche
+ce qui a été compris, ligne par ligne, avec les quantités et les cuissons
+modifiables d'un appui. Ce n'est qu'ensuite que l'on passe à la saisie
+habituelle, puis que l'on envoie. Au grill il y a du bruit, et une pièce partie
+sur une cuisson mal entendue est une pièce perdue : la dictée fait gagner du
+temps, elle ne décide pas.
+
+Une cuisson qui n'a pas été entendue est **signalée en rouge et bloque le
+passage à l'étape suivante** plutôt que d'être devinée. Les mots non reconnus
+sont listés, pour qu'un oubli se voie.
+
+Deux limites à connaître. La dictée s'appuie sur la reconnaissance vocale
+intégrée au navigateur : elle **demande du réseau** sur la plupart d'entre eux,
+et n'est pas disponible partout — le bouton disparaît alors, plutôt que
+d'offrir une fonction qui échoue. Le reste de l'application continue de
+fonctionner hors ligne. Testez sur vos téléphones avant de compter dessus en
+plein service.
+
+### Adapter le vocabulaire
+
+C'est le réglage qui décide de la justesse. Dans `src/config.js`, chaque
+grillade et chaque cuisson porte une liste `dit` : les mots que la dictée peut
+renvoyer pour elle.
+
+```js
+{ id: 'tmhk', nom: 'Tmhk', dit: ['tomahawk', 'tomawak', 'tomahak'] },
+```
+
+Les listes livrées sont des **suppositions** à partir de vos abréviations —
+mettez-y vos mots à vous, ceux que l'équipe emploie réellement. Les accents, la
+casse et le « s » du pluriel sont ignorés, inutile de les décliner. Une
+variante plus longue l'emporte sur une plus courte, donc « tomahawk wagyu » ne
+sera pas pris pour un « tomahawk ».
+
 ## Statistiques
 
 Accessibles par l'icône en haut à droite de l'accueil, sur quatre périodes
@@ -234,6 +276,12 @@ npm test
   un faux serveur Supabase (`test/faux-supabase.cjs`) : code d'accès,
   propagation d'une commande d'un appareil à l'autre, coupure réseau, saisie
   hors ligne et rattrapage au retour, reprise par un appareil qui rejoint ;
+- `test/vocal.test.cjs` — l'analyse des commandes dictées, cas par cas :
+  numéros composés, pluriels, cumuls, formulations inversées, et les cas où
+  l'analyse doit refuser de deviner ;
+- `test/dictee.test.cjs` — le parcours de dictée dans un navigateur, avec un
+  faux moteur de reconnaissance : ce qui est compris, ce qui est corrigé, et
+  les échecs (micro refusé, pas de réseau, navigateur sans dictée) ;
 - `test/schema.test.sh` — `supabase/schema.sql` exécuté sur un vrai
   PostgreSQL : le script passe et se rejoue sans erreur, l'horodatage
   d'arbitrage vient bien de la base, et surtout **un autre compte du même
@@ -271,7 +319,10 @@ src/
     Roue.jsx              le sélecteur de table
     Toast.jsx             messages et annulation
     MajPWA.jsx            proposition de mise à jour
+    Dictee.jsx            relecture d'une commande dictée
   lib/
+    vocal.js              analyse d'une commande dictée (fonction pure)
+    micro.js              accès à la dictée du navigateur
     temps.js              horloge partagée et formats de durée
     stats.js              agrégation des commandes
     fusion.js             arbitrage local / serveur (fonction pure)

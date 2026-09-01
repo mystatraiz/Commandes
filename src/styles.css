@@ -609,9 +609,13 @@ ul, ol { list-style: none; padding: 0; }
 /* Barre du bouton « Nouvelle commande », toujours accessible en haut */
 .newbar {
   flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
   padding: 12px 14px 4px;
+  max-width: 1080px;
+  margin-inline: auto;
+  width: 100%;
 }
-.newbar .btn { max-width: 1080px; margin-inline: auto; }
 
 /* Barre empilée : part de chaque cuisson dans le total.
    L'écart de 2px laisse voir la surface entre deux segments — c'est ce qui les
@@ -803,3 +807,81 @@ table.data td { text-align: right; font-weight: 700; color: var(--ink-soft); }
 }
 .anomalie strong { color: #FF8E91; }
 .anomalie .note { display: block; margin-top: 5px; color: var(--ink-mute); font-size: 12.5px; }
+
+/* ============================================================
+   Dictée vocale
+   ============================================================ */
+
+.mic {
+  flex: 0 0 auto;
+  min-width: 58px;
+  background: var(--surface-2);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.mic:active { background: var(--surface-3); }
+
+/* Écoute en cours */
+.ecoute { text-align: center; padding: 22px 8px 8px; }
+.onde { display: flex; align-items: center; justify-content: center; gap: 5px; height: 62px; margin-bottom: 18px; }
+.onde span {
+  width: 7px; border-radius: 99px; background: var(--accent);
+  animation: pulse 1.1s ease-in-out infinite;
+}
+.onde span:nth-child(1) { height: 18px; animation-delay: 0s }
+.onde span:nth-child(2) { height: 34px; animation-delay: .12s }
+.onde span:nth-child(3) { height: 52px; animation-delay: .24s }
+.onde span:nth-child(4) { height: 34px; animation-delay: .36s }
+.onde span:nth-child(5) { height: 18px; animation-delay: .48s }
+@keyframes pulse { 0%, 100% { transform: scaleY(.4); opacity: .5 } 50% { transform: scaleY(1); opacity: 1 } }
+
+.dit { font-size: 18px; font-weight: 700; line-height: 1.45; color: var(--ink); min-height: 3em; }
+.dit-relu { font-size: 14px; color: var(--ink-mute); font-style: italic; margin-bottom: 12px; line-height: 1.5; }
+
+/* Relecture avant envoi */
+.relu { display: flex; flex-direction: column; gap: 10px; }
+.relu li {
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  padding: 10px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.relu li.manque { box-shadow: inset 0 0 0 1.5px var(--hot); }
+.relu .tete { display: flex; align-items: center; gap: 10px; }
+.relu .nom { flex: 1; min-width: 0; font-size: 17px; font-weight: 750; }
+.relu .qte { display: inline-flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+.relu .qte button {
+  width: 32px; height: 32px; border-radius: 8px; background: var(--surface-3);
+  font-size: 17px; font-weight: 800; line-height: 1;
+}
+.relu .qte b { min-width: 26px; text-align: center; font-size: 17px; font-weight: 800; }
+.relu .oter {
+  width: 30px; height: 30px; border-radius: 99px; background: var(--surface-3);
+  color: var(--ink-soft); font-size: 16px; line-height: 1; flex: 0 0 auto;
+}
+.relu .oter:active { background: var(--hot); color: #fff; }
+.cuissons-choix { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.cuissons-choix button {
+  min-height: 40px; border-radius: 9px; background: var(--surface-3);
+  font-size: 12.5px; font-weight: 750; color: var(--ink-soft);
+  padding: 4px 2px; line-height: 1.15;
+}
+.cuissons-choix button.on { font-weight: 800; }
+.relu .sans { font-size: 12px; font-weight: 700; color: var(--ink-mute); text-transform: uppercase; letter-spacing: .4px; }
+.relu .alerte { font-size: 12.5px; font-weight: 700; color: #FF8E91; }
+.ignores { margin-top: 14px; font-size: 12.5px; color: var(--ink-mute); }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .ecoute { padding: 8px }
+  .onde { height: 40px; margin-bottom: 10px }
+  .dit { font-size: 16px; min-height: 2em }
+  .relu { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) }
+}
