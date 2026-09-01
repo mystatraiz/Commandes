@@ -6,8 +6,10 @@ import { partageActif, sessionCourante, supabase } from './supabase.js';
 import Accueil from './screens/Accueil.jsx';
 import ChoixTable from './screens/ChoixTable.jsx';
 import Connexion from './screens/Connexion.jsx';
+import Dictee from './screens/Dictee.jsx';
 import Saisie from './screens/Saisie.jsx';
 import Stats from './screens/Stats.jsx';
+import { dicteeDisponible } from './lib/micro.js';
 import Toast from './components/Toast.jsx';
 import MajPWA from './components/MajPWA.jsx';
 
@@ -145,6 +147,23 @@ export default function App() {
 
   const choisirTable = useCallback((table) => setBrouillon((b) => ({ ...b, table })), []);
 
+  const dicter = useCallback(() => {
+    setBrouillon(BROUILLON_VIDE);
+    pousser('dictee');
+  }, [pousser]);
+
+  /* La dictée ne fait que pré-remplir : on atterrit sur l'écran de saisie
+     habituel, où la commande se relit et se corrige avant d'être envoyée. */
+  const reprendreDictee = useCallback((resultat) => {
+    setBrouillon({
+      table: resultat.table,
+      lignes: resultat.lignes.map(({ grillade, cuisson, qte }) => ({ grillade, cuisson, qte })),
+    });
+    // Remplace l'écran de dictée plutôt que de l'empiler : revenir en arrière
+    // depuis la saisie doit ramener à l'accueil, pas relancer le micro.
+    setPile((p) => [...p.slice(0, -1), 'saisie']);
+  }, []);
+
   const validerTable = useCallback(() => { vibrer(12); pousser('saisie'); }, [pousser]);
 
   /** Ajoute une pièce ; deux fois la même viande et la même cuisson se cumulent. */
@@ -230,6 +249,7 @@ export default function App() {
           commandes={commandes}
           etatSync={etatSync}
           onNouvelle={commencer}
+          onDicter={dicteeDisponible ? dicter : null}
           onServir={servir}
           onStats={() => pousser('stats')}
         />
@@ -254,6 +274,8 @@ export default function App() {
           onChangerTable={retour}
         />
       )}
+
+      {ecran === 'dictee' && <Dictee onValider={reprendreDictee} onRetour={retour} />}
 
       {ecran === 'stats' && <Stats commandesEnCours={commandes} onRetour={retour} />}
 
