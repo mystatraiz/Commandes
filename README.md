@@ -1,5 +1,9 @@
 # Grill — Commandes
 
+> Ce dépôt héberge aussi **Forge**, l'application de suivi du jeûne, du poids
+> et du sport (padel, renfo), dans le dossier [`forge/`](forge/README.md).
+> Elle s'installe dans le même projet Supabase que le grill, sans rien recréer.
+
 Prise de commandes au grill : on saisit table par table, l'application se
 souvient de ce qui est en cours, depuis combien de temps, et garde l'historique
 pour les statistiques du service.
