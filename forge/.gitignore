@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dev-dist/
+test/captures/
+.vercel
+.DS_Store
+.env.local
