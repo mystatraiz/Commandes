@@ -1,6 +1,40 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { OBJECTIFS_JEUNE } from '../lib/jeune.js';
 import { syncActive, COMPTE } from '../supabase.js';
+
+/*
+  Relevé de la géométrie réelle de l'écran.
+
+  Les marges d'écran annoncées par iOS ne se reproduisent sur aucun navigateur
+  de bureau : sans mesure prise sur l'appareil, on ne peut que supposer pourquoi
+  la barre du bas ne tombe pas où elle devrait. Ces quelques nombres disent en
+  une ligne si la page occupe tout l'écran, quelle marge basse le système
+  annonce, et où la barre atterrit vraiment.
+*/
+function useGeometrie() {
+  const [g, setG] = useState(null);
+  useEffect(() => {
+    const mesurer = () => {
+      const nav = document.querySelector('.nav');
+      const boite = nav?.getBoundingClientRect();
+      const style = nav ? getComputedStyle(nav) : null;
+      setG({
+        ecran: window.screen?.height ?? 0,
+        vue: Math.round(window.innerHeight),
+        visuelle: Math.round(window.visualViewport?.height ?? 0),
+        barre: style ? Math.round(parseFloat(style.height)) : null,
+        marge: style ? Math.round(parseFloat(style.paddingBottom)) : null,
+        sousBarre: boite ? Math.round(window.innerHeight - boite.bottom) : null,
+        plein: window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true,
+        dpr: window.devicePixelRatio,
+      });
+    };
+    mesurer();
+    window.addEventListener('resize', mesurer);
+    return () => window.removeEventListener('resize', mesurer);
+  }, []);
+  return g;
+}
 
 function Anomalie({ etat }) {
   if (!etat?.actif || !etat.erreur) return null;
@@ -15,6 +49,7 @@ function Anomalie({ etat }) {
 
 export default function Profil({ resume, reglages, etatSync, onMajReglages, onDeconnecter, onExporter }) {
   const { niveau, serie, badges, nbBadges, journeesParfaites } = resume;
+  const geo = useGeometrie();
   const [form, setForm] = useState({
     prenom: reglages.prenom || '',
     objectifPoids: reglages.objectifPoids ?? '',
@@ -107,6 +142,12 @@ export default function Profil({ resume, reglages, etatSync, onMajReglages, onDe
           {/* Repère de version : dit d'un coup d'œil si le téléphone tourne
               bien sur la dernière mise en ligne. */}
           <p className="aide version" style={{ marginTop: 12 }}>Version du {__BUILD__}</p>
+          {geo && (
+            <p className="aide geometrie">
+              écran {geo.ecran} · vue {geo.vue} · visuelle {geo.visuelle} · barre {geo.barre}
+              {' '}(marge {geo.marge}) · sous barre {geo.sousBarre} · {geo.plein ? 'plein écran' : 'navigateur'} · ×{geo.dpr}
+            </p>
+          )}
         </section>
       </div>
     </div>
