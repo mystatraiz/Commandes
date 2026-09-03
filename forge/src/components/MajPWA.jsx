@@ -1,19 +1,29 @@
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
-/** Bandeau de mise à jour : proposé, jamais imposé en pleine session. */
+// Toutes les demi-heures, et à chaque retour au premier plan. Sans cela, une
+// application ouverte depuis l'écran d'accueil peut garder des jours durant la
+// version qu'elle avait au moment de son installation.
+const PERIODE_MS = 30 * 60 * 1000;
+
+/**
+ * Enregistrement du service worker.
+ *
+ * La mise à jour s'applique d'elle-même (`autoUpdate`) : sur un téléphone, un
+ * bandeau que l'on ne voit pas laisse tourner une version périmée. Il n'y a
+ * rien à afficher, d'où l'absence de rendu.
+ */
 export default function MajPWA() {
-  const {
-    needRefresh: [aJour, setAJour],
-    updateServiceWorker,
-  } = useRegisterSW({
+  useRegisterSW({
     onRegisterError: (e) => console.warn('[PWA] enregistrement impossible :', e?.message),
+    onRegisteredSW: (url, registration) => {
+      if (!registration) return;
+      const verifier = () => {
+        if (!navigator.onLine) return;
+        registration.update().catch(() => {});
+      };
+      setInterval(verifier, PERIODE_MS);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) verifier(); });
+    },
   });
-  if (!aJour) return null;
-  return (
-    <div className="toast" role="status" aria-live="polite">
-      <span>Nouvelle version disponible</span>
-      <button className="btn btn-primary" type="button" onClick={() => updateServiceWorker(true)}>Recharger</button>
-      <button className="btn btn-quiet" type="button" onClick={() => setAJour(false)} aria-label="Plus tard">Plus tard</button>
-    </div>
-  );
+  return null;
 }

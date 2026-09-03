@@ -166,6 +166,10 @@ const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
   await pg.locator('.nav button', { hasText: 'Profil' }).click();
   await attendre(300);
   ok(await pg.locator('.badge.obtenu').count() >= 3, 'des badges sont débloqués');
+  // Le repère de version doit porter une vraie date : c'est lui qui dit si le
+  // téléphone tourne encore sur une version périmée.
+  const version = await pg.locator('.version').textContent();
+  ok(/Version du 20\d\d-\d\d-\d\d \d\d:\d\d UTC/.test(version), `repère de version daté (${version})`);
   await pg.locator('#prenom').fill('Alex');
   await pg.locator('#obj-poids').fill('78');
   await pg.getByRole('button', { name: 'Enregistrer' }).click();
