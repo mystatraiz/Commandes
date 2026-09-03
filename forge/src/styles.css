@@ -499,3 +499,9 @@ table.data td:first-child, table.data th:first-child { text-align: left; }
   .topbar { max-width: 560px; width: 100%; margin: 0 auto; }
   .nav { padding-left: calc(50% - 280px); padding-right: calc(50% - 280px); }
 }
+
+/* Relevé de géométrie d'écran, sous le repère de version dans Profil. */
+.aide.geometrie {
+  margin-top: 4px; font-size: 11px; line-height: 1.5;
+  font-variant-numeric: tabular-nums; color: var(--ink-mute); word-spacing: .05em;
+}
