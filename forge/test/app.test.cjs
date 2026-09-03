@@ -180,6 +180,40 @@ const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
   ok((await pg.locator('.entete-accueil h1').textContent()).includes('Alex'), 'les réglages survivent au rechargement');
   ok((await pg.locator('.tuiles.trois .tuile').first().textContent()).includes('84,3'), 'le poids aussi');
 
+  console.log('\n== Barre de navigation ==');
+  // Les icônes sont dessinées à la main : on vérifie qu'aucune n'est vide.
+  const formes = await pg.locator('.nav button svg').evaluateAll(
+    (els) => els.map((e) => e.querySelectorAll('path, rect, circle').length),
+  );
+  ok(formes.length === 5 && formes.every((n) => n >= 1), `5 icônes dessinées (${formes.join(', ')} formes)`);
+
+  // Marges d'écran : Safari sur iOS 26 annonce jusqu'à 96 px en bas quand sa
+  // barre d'outils est repliée, ce qui faisait flotter la navigation très
+  // au-dessus du bord. Le plafond de 34 px doit tenir quoi qu'annonce l'OS.
+  for (const inset of ['0px', '34px', '96px']) {
+    await pg.addStyleTag({ content: `:root { --sab-test: ${inset}; }` });
+    await pg.evaluate((v) => {
+      document.documentElement.style.setProperty('--sab', `min(${v}, 34px)`);
+      document.documentElement.style.setProperty('--sat', 'min(59px, 62px)');
+    }, inset);
+    await attendre(120);
+    const g = await pg.evaluate(() => {
+      const n = document.querySelector('.nav').getBoundingClientRect();
+      const b = document.querySelector('.nav button').getBoundingClientRect();
+      return { sousLaBarre: Math.round(innerHeight - n.bottom), hauteur: Math.round(n.height), vide: Math.round(innerHeight - b.bottom) };
+    });
+    ok(g.sousLaBarre === 0, `marge ${inset} : la barre touche le bas de l’écran`);
+    ok(g.hauteur <= 98, `marge ${inset} : hauteur contenue (${g.hauteur} px)`);
+    ok(g.vide <= 34, `marge ${inset} : au plus 34 px sous les libellés (${g.vide} px)`);
+  }
+  // Le contenu défilant ne doit jamais finir caché sous la barre.
+  const degagement = await pg.evaluate(() => {
+    const c = document.querySelector('.contenu.avec-nav');
+    return parseFloat(getComputedStyle(c).paddingBottom) >= document.querySelector('.nav').getBoundingClientRect().height;
+  });
+  ok(degagement, 'le bas du contenu reste dégagé sous la barre');
+  await pg.evaluate(() => { document.documentElement.style.removeProperty('--sab'); document.documentElement.style.removeProperty('--sat'); });
+
   console.log('\n== Bouton retour ==');
   await pg.locator('.action', { hasText: 'Poids' }).click();
   await attendre(300);

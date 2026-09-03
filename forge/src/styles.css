@@ -43,8 +43,12 @@
   --glow-lime: 0 0 0 1px rgba(200,245,58,.35), 0 8px 28px rgba(200,245,58,.22);
   --glow-feu: 0 0 0 1px rgba(255,77,46,.4), 0 8px 28px rgba(255,77,46,.25);
 
-  --sat: env(safe-area-inset-top, 0px);
-  --sab: env(safe-area-inset-bottom, 0px);
+  /* Zones sûres plafonnées. Safari sur iOS 26 annonce une marge basse de
+     96 px quand sa barre d'outils est repliée : la navigation se retrouvait
+     alors à flotter très au-dessus du bord. Aucun iPhone n'a besoin de plus
+     de 34 px en bas ni de 62 px en haut, on s'arrête là. */
+  --sat: min(env(safe-area-inset-top, 0px), 62px);
+  --sab: min(env(safe-area-inset-bottom, 0px), 34px);
   --tap: 48px;
   --nav-h: 64px;
 }
