@@ -104,6 +104,9 @@ export default function Profil({ resume, reglages, etatSync, onMajReglages, onDe
             <button className="btn btn-ghost" type="button" onClick={onExporter}>Exporter (JSON)</button>
             {syncActive && <button className="btn btn-danger" type="button" onClick={onDeconnecter}>Déconnexion</button>}
           </div>
+          {/* Repère de version : dit d'un coup d'œil si le téléphone tourne
+              bien sur la dernière mise en ligne. */}
+          <p className="aide version" style={{ marginTop: 12 }}>Version du {__BUILD__}</p>
         </section>
       </div>
     </div>
