@@ -5,6 +5,83 @@ import { OBJECTIFS_JEUNE, PHASES, jeuneEnCours, jeunesTermines, dureeJeuneMs, du
 import { construireSeries } from '../lib/series.js';
 import { formatChrono, formatDuree, formatHeures, formatDateCourte, formatHeure, versInputDateHeure, cleJour } from '../lib/temps.js';
 
+/* Un jeûne qu'on a oublié d'arrêter compte des heures qui n'ont pas été
+   faites. Tant qu'on ne peut pas le corriger, la faute reste dans les courbes
+   et dans l'XP : d'où la reprise du début comme de la fin, avec la durée
+   recalculée sous les yeux avant d'enregistrer. */
+function Corriger({ jeune, objectifDefaut, onEnregistrer, onSupprimer, onFermer }) {
+  const [debut, setDebut] = useState(versInputDateHeure(jeune.debut));
+  const [fin, setFin] = useState(versInputDateHeure(jeune.fin));
+
+  const debutMs = new Date(debut).getTime();
+  const finMs = new Date(fin).getTime();
+  const objectif = Number(jeune.donnees?.objectifH) || objectifDefaut;
+  const duree = finMs - debutMs;
+
+  let erreur = null;
+  if (!Number.isFinite(debutMs) || !Number.isFinite(finMs)) erreur = 'Renseigne les deux moments.';
+  else if (duree <= 0) erreur = 'La fin doit venir après le début.';
+  else if (finMs > Date.now() + 60000) erreur = 'La fin ne peut pas être dans le futur.';
+  else if (duree > 14 * 86400000) erreur = 'Plus de 14 jours : vérifie les dates.';
+
+  // Le cas courant est un jeûne arrêté trop tard : on recule la fin d'un appui.
+  const decaler = (minutes) => setFin(versInputDateHeure(new Date(fin).getTime() + minutes * 60000));
+
+  const enregistrer = () => {
+    if (erreur) return;
+    onEnregistrer(jeune, { debut: debutMs, fin: finMs, jour: cleJour(debutMs) });
+    onFermer();
+  };
+
+  return (
+    <>
+      <div className="champ-groupe">
+        <label htmlFor="corr-debut">Début</label>
+        <input id="corr-debut" className="champ" type="datetime-local" value={debut}
+          max={versInputDateHeure(Date.now())} onChange={(e) => setDebut(e.target.value)} />
+      </div>
+
+      <div className="champ-groupe">
+        <label htmlFor="corr-fin">Fin</label>
+        <input id="corr-fin" className="champ" type="datetime-local" value={fin}
+          max={versInputDateHeure(Date.now())} onChange={(e) => setFin(e.target.value)} />
+        <div className="puces" style={{ marginTop: 8 }}>
+          {[-240, -120, -60, -30, 30].map((m) => (
+            <button key={m} type="button" className="puce" onClick={() => decaler(m)}>
+              {m > 0 ? `+${m} min` : m <= -60 ? `− ${-m / 60} h` : `− ${-m} min`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="carte" style={{ padding: 14 }}>
+        <span className="eyebrow">Durée corrigée</span>
+        <div className="rangee" style={{ alignItems: 'baseline', marginTop: 6 }}>
+          <div className={`chiffre lg ${!erreur && duree / 3600000 >= objectif ? 'lime' : ''}`}>
+            {erreur ? '—' : formatDuree(duree)}
+          </div>
+          <div className="aide" style={{ textAlign: 'right' }}>
+            objectif {objectif} h<br />
+            {!erreur && (duree / 3600000 >= objectif ? 'atteint' : `${Math.round((duree / 3600000 / objectif) * 100)} %`)}
+          </div>
+        </div>
+        <p className="aide" style={{ marginTop: 6 }}>
+          Avant correction : {formatDuree(jeune.fin - jeune.debut)}.
+        </p>
+      </div>
+
+      {erreur && <p className="erreur" role="alert">{erreur}</p>}
+
+      <button className="btn btn-primary btn-block" type="button" disabled={Boolean(erreur)} onClick={enregistrer}>
+        Enregistrer la correction
+      </button>
+      <button className="btn btn-danger btn-block" type="button" onClick={() => { onSupprimer(jeune.id); onFermer(); }}>
+        Supprimer ce jeûne
+      </button>
+    </>
+  );
+}
+
 export default function Jeune({ entrees, reglages, maintenant, onDemarrer, onTerminer, onModifier, onSupprimer }) {
   const jeune = jeuneEnCours(entrees);
   const [objectif, setObjectif] = useState(Number(reglages.objectifJeuneH) || 16);
@@ -106,7 +183,10 @@ export default function Jeune({ entrees, reglages, maintenant, onDemarrer, onTer
         </section>
 
         <section>
-          <div className="carte-tete"><span className="eyebrow">Historique</span></div>
+          <div className="carte-tete">
+            <span className="eyebrow">Historique</span>
+            {historique.length > 0 && <span className="aide">appuie pour corriger</span>}
+          </div>
           {historique.length === 0 ? (
             <div className="vide"><div className="big">⏱️</div><h3>Aucun jeûne terminé</h3><p>Ton premier jeûne terminé apparaîtra ici, avec sa durée et son objectif.</p></div>
           ) : (
@@ -138,9 +218,15 @@ export default function Jeune({ entrees, reglages, maintenant, onDemarrer, onTer
       )}
 
       {feuille?.jeune && (
-        <Feuille titre="Ce jeûne" onFermer={() => setFeuille(null)}>
-          <p className="soft">{formatDateCourte(cleJour(feuille.jeune.debut))}, {formatHeure(feuille.jeune.debut)} → {formatHeure(feuille.jeune.fin)} : <b>{formatHeures(dureeJeuneH(feuille.jeune))}</b>.</p>
-          <button className="btn btn-danger btn-block" type="button" onClick={() => { onSupprimer(feuille.jeune.id); setFeuille(null); }}>Supprimer ce jeûne</button>
+        <Feuille titre={`Corriger — ${formatDateCourte(cleJour(feuille.jeune.debut))}`} onFermer={() => setFeuille(null)}>
+          <Corriger
+            key={feuille.jeune.id}
+            jeune={feuille.jeune}
+            objectifDefaut={Number(reglages.objectifJeuneH) || 16}
+            onEnregistrer={onModifier}
+            onSupprimer={onSupprimer}
+            onFermer={() => setFeuille(null)}
+          />
         </Feuille>
       )}
     </div>
