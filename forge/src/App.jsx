@@ -166,7 +166,15 @@ export default function App() {
     montrerToast(h >= obj ? `${formatHeures(h)} : objectif atteint.` : `${formatHeures(h)} de jeûne. On fera mieux.`, { xp });
   }, [enregistrer, montrerToast]);
 
-  const modifierJeune = useCallback((j, patch) => enregistrer({ ...j, ...patch }), [enregistrer]);
+  const modifierJeune = useCallback(async (j, patch) => {
+    const modifie = { ...j, ...patch };
+    await enregistrer(modifie);
+    vibrer(12);
+    // Corriger un jeûne change sa durée, donc l'XP et les courbes : on le dit.
+    montrerToast(modifie.fin
+      ? `Jeûne corrigé : ${formatHeures(dureeJeuneH(modifie))}`
+      : 'Heure de début corrigée');
+  }, [enregistrer, montrerToast]);
 
   /* ---------------- Poids & sessions ---------------- */
 

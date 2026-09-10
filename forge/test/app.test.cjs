@@ -55,6 +55,56 @@ const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
   ok(await pg.locator('.liste .ligne').count() === 1, 'le jeûne passe dans l’historique');
   ok((await pg.locator('.liste .ligne .v').textContent()).includes('objectif atteint'), 'marqué comme réussi');
 
+  console.log('\n== Corriger un jeûne terminé ==');
+  // Un jeûne qu'on oublie d'arrêter compte des heures qui n'ont pas été faites.
+  await pg.locator('.liste .ligne').first().click();
+  await attendre(300);
+  ok(await pg.locator('#corr-debut').isVisible() && await pg.locator('#corr-fin').isVisible(),
+    'la fiche reprend le début et la fin');
+  const dureeAvant = (await pg.locator('.feuille .chiffre.lg').textContent()).trim();
+  await pg.locator('.feuille .puce', { hasText: /4 h/ }).click();
+  await attendre(200);
+  const dureeApres = (await pg.locator('.feuille .chiffre.lg').textContent()).trim();
+  ok(dureeAvant !== dureeApres, `la durée se recalcule en direct (${dureeAvant} → ${dureeApres})`);
+  ok(/^1[23] h/.test(dureeApres), `quatre heures de moins sur dix-sept (${dureeApres})`);
+  // Une fin avant le début doit être refusée plutôt qu'enregistrée de travers.
+  await pg.locator('#corr-fin').fill(await pg.locator('#corr-debut').inputValue());
+  await attendre(200);
+  ok(await pg.getByRole('button', { name: 'Enregistrer la correction' }).isDisabled(),
+    'une fin qui ne suit pas le début bloque l’enregistrement');
+  ok((await pg.locator('.feuille .erreur').textContent()).includes('après le début'), 'et la raison est dite');
+  await pg.locator('.feuille .puce', { hasText: /\+30 min/ }).click();
+  await attendre(200);
+  ok(!(await pg.getByRole('button', { name: 'Enregistrer la correction' }).isDisabled()), 'corrigée, elle repasse');
+  await pg.locator('#corr-fin').fill(await pg.evaluate(() => {
+    const d = new Date(Date.now() - 4 * 3600000);
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  }));
+  await attendre(200);
+  await pg.getByRole('button', { name: 'Enregistrer la correction' }).click();
+  await attendre(500);
+  ok((await pg.locator('.toast').textContent()).includes('corrigé'), 'la correction est confirmée');
+  const ligneCorrigee = await pg.locator('.liste .ligne').first().textContent();
+  ok(!ligneCorrigee.includes('objectif atteint'), 'le jeûne raccourci ne compte plus comme réussi');
+  ok(/1[23] h/.test(ligneCorrigee), `l’historique porte la durée corrigée (${ligneCorrigee.trim().slice(-40)})`);
+
+  // Aller-retour : on rallonge, et la suite du parcours juge la gamification
+  // sur un jeûne de dix-sept heures comme avant la correction.
+  const maintenantLocal = () => pg.evaluate(() => {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  });
+  await pg.locator('.liste .ligne').first().click();
+  await attendre(300);
+  await pg.locator('#corr-fin').fill(await maintenantLocal());
+  await attendre(200);
+  await pg.getByRole('button', { name: 'Enregistrer la correction' }).click();
+  await attendre(500);
+  ok((await pg.locator('.liste .ligne .v').textContent()).includes('objectif atteint'),
+    'rallongé, il repasse au vert : la correction va dans les deux sens');
+
   console.log('\n== Poids ==');
   await pg.locator('.nav button', { hasText: 'Accueil' }).click();
   await attendre(300);
