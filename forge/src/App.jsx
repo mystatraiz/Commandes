@@ -5,7 +5,7 @@ import * as api from './defis.js';
 import { syncActive, sessionCourante, supabase, deconnecter, lireProfil, ecrireProfil } from './supabase.js';
 import { REGLAGES_DEFAUT, calculerXp, resume as calculerResume } from './lib/gamification.js';
 import { jeuneEnCours } from './lib/jeune.js';
-import { calculerProgres, aPublier, evenementAPublier, statutDefi } from './lib/defis.js';
+import { calculerProgres, aPublier, evenementAPublier, statutDefi, VISIBILITE_DEFAUT } from './lib/defis.js';
 import { pesees } from './lib/series.js';
 import { ECHAUFFEMENT_PADEL, dureeEchauffementS } from './lib/echauffement.js';
 import { cleJour, useHorloge, formatHeures } from './lib/temps.js';
@@ -240,7 +240,7 @@ export default function App() {
       for (const d of defis) {
         if (!vivant) return;
         const progres = calculerProgres(mesPesees, d, Date.now());
-        const envoi = aPublier(progres, d, d.participation?.visibilite || 'pourcentage');
+        const envoi = aPublier(progres, d, d.participation?.visibilite || VISIBILITE_DEFAUT);
         const p = d.participation;
         const identique = nb(p?.valeur) === envoi.valeur && nb(p?.pct) === envoi.pct && nb(p?.kg) === envoi.kg;
         if (identique) continue;
@@ -249,7 +249,7 @@ export default function App() {
         aRecharger = true;
         // La même pesée entre aussi dans le fil, filtrée pareil : c'est elle
         // qui trace les courbes et qui se commente.
-        const evt = evenementAPublier(progres, d.participation?.visibilite || 'pourcentage');
+        const evt = evenementAPublier(progres, d.participation?.visibilite || VISIBILITE_DEFAUT);
         if (evt && evt.jour >= d.debut && evt.jour <= d.fin) {
           await api.publierEvenement(d.id, {
             ...evt,

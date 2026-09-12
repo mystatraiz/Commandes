@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MESURES, VISIBILITES, DUREES_DEFI, finPour } from '../lib/defis.js';
+import { MESURES, VISIBILITES, VISIBILITE_DEFAUT, DUREES_DEFI, finPour } from '../lib/defis.js';
 import { cleJour, formatDateCourte } from '../lib/temps.js';
 import { EMOJIS } from './Connexion.jsx';
 
@@ -11,7 +11,7 @@ export default function CreerDefi({ profil, maintenant, onCreer, onRetour }) {
   const [gage, setGage] = useState('');
   const [pseudo, setPseudo] = useState(profil?.pseudo || '');
   const [emoji, setEmoji] = useState(profil?.emoji || '💪');
-  const [visibilite, setVisibilite] = useState('pourcentage');
+  const [visibilite, setVisibilite] = useState(VISIBILITE_DEFAUT);
   const [erreur, setErreur] = useState(null);
   const [enCours, setEnCours] = useState(false);
 

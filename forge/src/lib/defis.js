@@ -19,12 +19,17 @@ export const MESURES = [
 ];
 
 /* Ce que les autres ont le droit de voir. Le poids absolu, lui, n'est jamais
-   publié — quel que soit le réglage. Ce qui circule est une progression. */
+   publié — quel que soit le réglage. Ce qui circule est une progression.
+
+   Le défaut montre tout : entre potes, cacher ses chiffres enlève l'essentiel
+   du sel. Le réglage reste pour qui n'est pas à l'aise. */
 export const VISIBILITES = [
-  { id: 'rang', nom: 'Mon rang seul', detail: 'Les autres voient ta place, pas tes chiffres.' },
-  { id: 'pourcentage', nom: 'Mon pourcentage', detail: 'Ta progression en part du poids de départ.' },
-  { id: 'kilos', nom: 'Mes kilos perdus', detail: 'Ta progression en kilos.' },
+  { id: 'kilos', nom: 'Pourcentage et kilos', detail: 'Tout le monde voit ta progression, dans les deux unités.' },
+  { id: 'pourcentage', nom: 'Pourcentage seul', detail: 'Ta progression en part du poids de départ, sans les kilos.' },
+  { id: 'rang', nom: 'Mon rang seul', detail: 'Les autres voient ta place, ni tes chiffres ni ta courbe.' },
 ];
+
+export const VISIBILITE_DEFAUT = 'kilos';
 
 export const DUREES_DEFI = [
   { jours: 14, nom: '2 semaines' },

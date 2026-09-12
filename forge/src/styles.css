@@ -615,3 +615,9 @@ table.data td:first-child, table.data th:first-child { text-align: left; }
 }
 .ecrire input:focus { border-color: var(--lime); box-shadow: 0 0 0 3px rgba(200,245,58,.16); }
 .ecrire .btn { min-height: 44px; padding: 0 16px; font-size: 15px; }
+
+.evt-tete .delta { text-align: right; line-height: 1.05; }
+.evt-tete .delta small {
+  display: block; font-family: var(--font); font-size: 12px; font-weight: 600;
+  color: var(--ink-mute); margin-top: 2px; letter-spacing: 0;
+}

@@ -28,6 +28,10 @@ Les **ex æquo partagent leur rang** et le suivant saute (1, 2, 2, 4). Qui ne
 s'est pas encore pesé ferme la marche **sans rang** plutôt que d'être compté
 dernier : il n'a pas encore joué.
 
+Dans le fil, c'est le **kilo** qui passe en gros — « −0,8 kg » se commente,
+« −0,8 % » ne dit rien à personne — avec le pourcentage juste dessous, puisque
+c'est lui qui classe.
+
 Le **gage** est une phrase libre — « le dernier paie la tournée » — affichée en
 grand sur le palmarès. L'application enregistre une phrase, **jamais de
 l'argent** : aucun encaissement, aucune cagnotte, rien à déclarer.
@@ -56,8 +60,9 @@ pas même quand on a créé le défi.
 
 ### Ce que les autres voient de toi
 
-Chacun règle sa visibilité, défi par défi : **son rang seul**, **son
-pourcentage**, ou **ses kilos perdus**.
+Par défaut, chacun montre **son pourcentage et ses kilos** : entre potes, se
+cacher enlève l'essentiel du sel. Le réglage reste, défi par défi, pour qui
+préfère **son pourcentage seul** ou **son rang seul**.
 
 **Ton poids absolu ne sort jamais**, quel que soit le réglage. Ce qui circule
 est une progression. Qui choisit « rang seul » n'a donc **pas de courbe** — on

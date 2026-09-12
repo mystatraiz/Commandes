@@ -19,14 +19,23 @@ function quand(jour, creeA, maintenant) {
   return formatDateCourte(jour);
 }
 
-function Evenement({ evt, mesure, maintenant, onReagir, onCommenter, onSupprimerCommentaire }) {
+function Evenement({ evt, maintenant, onReagir, onCommenter, onSupprimerCommentaire }) {
   const [tour, setTour] = useState(0);
   const [saisie, setSaisie] = useState('');
   const s = suggestions(evt.id, evt.pseudo, tour);
 
-  const delta = mesure === 'kilos' ? evt.deltaKg : evt.deltaPct;
-  const unite = mesure === 'kilos' ? 'kg' : '%';
-  const total = mesure === 'kilos' ? evt.kg : evt.pct;
+  // Le kilo passe en gros dès qu'il est publié : « −0,8 kg » se commente,
+  // « −0,8 % » ne dit rien à personne. Le pourcentage, lui, continue de
+  // classer et s'affiche juste dessous.
+  const enKilos = evt.deltaKg !== null && evt.deltaKg !== undefined;
+  const delta = enKilos ? evt.deltaKg : evt.deltaPct;
+  const unite = enKilos ? 'kg' : '%';
+  const deltaBis = enKilos ? evt.deltaPct : null;
+  const total = evt.kg !== null && evt.kg !== undefined ? evt.kg : evt.pct;
+  const uniteTotal = evt.kg !== null && evt.kg !== undefined ? 'kg' : '%';
+  const totalBis = evt.kg !== null && evt.kg !== undefined ? evt.pct : null;
+  const uniteBis = '%';
+  const chiffre = (v, u) => `${v > 0 ? '+' : ''}${v.toLocaleString('fr-FR')} ${u}`;
 
   const envoyer = (texte) => {
     if (!texte.trim()) return;
@@ -42,13 +51,15 @@ function Evenement({ evt, mesure, maintenant, onReagir, onCommenter, onSupprimer
           <b>{evt.pseudo}{evt.moi ? ' · toi' : ''}</b>
           <span>
             {evt.moi ? 'tu t’es pesé' : 's’est pesé'} · {quand(evt.jour, evt.creeA, maintenant)}
-            {total !== null && total !== undefined ? ` · ${total.toLocaleString('fr-FR')} ${unite} au total` : ''}
+            {total !== null && total !== undefined ? ` · ${total.toLocaleString('fr-FR')} ${uniteTotal}` : ''}
+            {totalBis !== null && totalBis !== undefined ? ` et ${totalBis.toLocaleString('fr-FR')} ${uniteBis} au total` : total !== null && total !== undefined ? ' au total' : ''}
           </span>
         </div>
         <div className={`delta ${delta === null || delta === undefined ? 'neutre' : delta < 0 ? 'bas' : delta > 0 ? 'haut' : 'neutre'}`}>
-          {delta === null || delta === undefined
-            ? '—'
-            : `${delta > 0 ? '+' : ''}${delta.toLocaleString('fr-FR')} ${unite}`}
+          {delta === null || delta === undefined ? '—' : chiffre(delta, unite)}
+          {delta !== null && delta !== undefined && deltaBis !== null && deltaBis !== undefined && (
+            <small>{chiffre(deltaBis, uniteBis)}</small>
+          )}
         </div>
       </div>
 
@@ -113,7 +124,7 @@ function Evenement({ evt, mesure, maintenant, onReagir, onCommenter, onSupprimer
   );
 }
 
-export default function Fil({ evenements, mesure, maintenant, onReagir, onCommenter, onSupprimerCommentaire }) {
+export default function Fil({ evenements, maintenant, onReagir, onCommenter, onSupprimerCommentaire }) {
   if (!evenements.length) {
     return (
       <p className="aide centre-texte" style={{ padding: '14px 0' }}>
@@ -125,7 +136,7 @@ export default function Fil({ evenements, mesure, maintenant, onReagir, onCommen
     <div className="fil">
       {evenements.map((evt) => (
         <Evenement
-          key={evt.id} evt={evt} mesure={mesure} maintenant={maintenant}
+          key={evt.id} evt={evt} maintenant={maintenant}
           onReagir={onReagir} onCommenter={onCommenter} onSupprimerCommentaire={onSupprimerCommentaire}
         />
       ))}
