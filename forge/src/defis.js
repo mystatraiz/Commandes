@@ -5,7 +5,7 @@
    d'abord » ici — mais on garde en cache le dernier classement connu, pour que
    l'arène montre quelque chose dans le métro plutôt qu'une page vide. */
 
-import { supabase, syncActive, TABLE_DEFIS, TABLE_PARTICIPATIONS } from './supabase.js';
+import { supabase, syncActive, utilisateurCourant, TABLE_DEFIS, TABLE_PARTICIPATIONS } from './supabase.js';
 import { genererCode, normaliserCode } from './lib/defis.js';
 
 const CACHE = 'grossac.classements';
@@ -168,16 +168,125 @@ export async function clore(defiId) {
   return error ? echec(error) : { ok: true };
 }
 
+/* ---------------- Le fil ----------------
+
+   Une pesée publiée est ce qui reste d'une pesée après le filtre de
+   visibilité : la progression, jamais le poids. C'est elle qui alimente les
+   courbes, et c'est à elle que se rattachent les vannes. */
+
+const TABLE_EVENEMENTS = 'gs_evenements';
+const TABLE_REACTIONS = 'gs_reactions';
+const TABLE_COMMENTAIRES = 'gs_commentaires';
+const FIL_MAX = 60;
+
+export async function fil(defiId) {
+  if (!syncActive) return { ...indisponible, evenements: [] };
+  const moi = (await utilisateurCourant())?.id || null;
+
+  const { data: evts, error } = await supabase
+    .from(TABLE_EVENEMENTS).select('*')
+    .eq('defi_id', defiId).order('cree_a', { ascending: false }).limit(FIL_MAX);
+  if (error) return { ...echec(error), evenements: [] };
+  if (!evts?.length) return { ok: true, evenements: [] };
+
+  const ids = evts.map((e) => e.id);
+  const [{ data: reacs }, { data: coms }] = await Promise.all([
+    supabase.from(TABLE_REACTIONS).select('*').in('evenement_id', ids),
+    supabase.from(TABLE_COMMENTAIRES).select('*').in('evenement_id', ids).order('cree_a', { ascending: true }),
+  ]);
+
+  const parEvt = new Map(ids.map((id) => [id, { reactions: {}, miennes: [], commentaires: [] }]));
+  for (const r of reacs || []) {
+    const bloc = parEvt.get(r.evenement_id);
+    if (!bloc) continue;
+    bloc.reactions[r.emoji] = (bloc.reactions[r.emoji] || 0) + 1;
+    if (r.user_id === moi) bloc.miennes.push(r.emoji);
+  }
+  for (const c of coms || []) {
+    const bloc = parEvt.get(c.evenement_id);
+    if (bloc) bloc.commentaires.push({
+      id: c.id, userId: c.user_id, pseudo: c.pseudo, emoji: c.emoji,
+      texte: c.texte, creeA: new Date(c.cree_a).getTime(), moi: c.user_id === moi,
+    });
+  }
+
+  return {
+    ok: true,
+    evenements: evts.map((e) => ({
+      id: e.id, userId: e.user_id, pseudo: e.pseudo, emoji: e.emoji, jour: e.jour,
+      pct: e.pct === null ? null : Number(e.pct),
+      kg: e.kg === null ? null : Number(e.kg),
+      deltaPct: e.delta_pct === null ? null : Number(e.delta_pct),
+      deltaKg: e.delta_kg === null ? null : Number(e.delta_kg),
+      creeA: new Date(e.cree_a).getTime(),
+      moi: e.user_id === moi,
+      ...parEvt.get(e.id),
+    })),
+  };
+}
+
+/** Une pesée par personne et par jour : se repeser corrige, ça n'inonde pas le fil. */
+export async function publierEvenement(defiId, champs) {
+  if (!syncActive) return indisponible;
+  const moi = (await utilisateurCourant())?.id;
+  if (!moi) return { ok: false, message: 'Connexion requise.' };
+  const ligne = {
+    id: `${defiId}-${moi}-${champs.jour}`,
+    defi_id: defiId, user_id: moi, pseudo: champs.pseudo, emoji: champs.emoji, jour: champs.jour,
+    pct: champs.pct, kg: champs.kg, delta_pct: champs.deltaPct, delta_kg: champs.deltaKg,
+  };
+  const { error } = await supabase
+    .from(TABLE_EVENEMENTS).upsert(ligne, { onConflict: 'defi_id,user_id,jour' });
+  return error ? echec(error) : { ok: true };
+}
+
+export async function reagir(evenementId, emoji, actif) {
+  if (!syncActive) return indisponible;
+  if (actif) {
+    const { error } = await supabase.from(TABLE_REACTIONS).insert({ evenement_id: evenementId, emoji });
+    // Deux appuis rapides sur le même emoji : la clé primaire refuse, et c'est
+    // exactement ce qu'on voulait.
+    if (error && !/duplicate key/i.test(error.message)) return echec(error);
+    return { ok: true };
+  }
+  const moi = (await utilisateurCourant())?.id;
+  const { error } = await supabase
+    .from(TABLE_REACTIONS).delete().eq('evenement_id', evenementId).eq('emoji', emoji).eq('user_id', moi);
+  return error ? echec(error) : { ok: true };
+}
+
+export async function commenter(evenementId, { pseudo, emoji, texte }) {
+  if (!syncActive) return indisponible;
+  const propre = String(texte || '').trim().slice(0, 400);
+  if (!propre) return { ok: false, message: 'Écris quelque chose.' };
+  const { error } = await supabase.from(TABLE_COMMENTAIRES).insert({
+    id: nouvelId(), evenement_id: evenementId, pseudo, emoji, texte: propre,
+  });
+  return error ? echec(error) : { ok: true };
+}
+
+export async function supprimerCommentaire(id) {
+  if (!syncActive) return indisponible;
+  const { error } = await supabase.from(TABLE_COMMENTAIRES).delete().eq('id', id);
+  return error ? echec(error) : { ok: true };
+}
+
 /* ---------------- Temps réel ----------------
    Une pesée d'un adversaire fait bouger le classement sans rien toucher. */
 
 export function surChangement(callback) {
   if (!syncActive || !supabase) return () => {};
-  const canal = supabase
-    .channel('gs-participations')
-    .on('postgres_changes', { event: '*', schema: 'public', table: TABLE_PARTICIPATIONS }, (m) => {
-      callback(m.new?.defi_id || m.old?.defi_id || null);
-    })
-    .subscribe();
+  const canal = supabase.channel('gs-fil');
+  const ecouter = (table, quoi) => canal.on(
+    'postgres_changes', { event: '*', schema: 'public', table },
+    (m) => callback(quoi, m.new?.defi_id || m.old?.defi_id || null),
+  );
+  ecouter(TABLE_PARTICIPATIONS, 'classement');
+  ecouter(TABLE_EVENEMENTS, 'fil');
+  // Les réactions et les vannes ne portent pas l'identifiant du défi : on
+  // rafraîchit le fil ouvert, c'est le seul qui puisse les afficher.
+  ecouter(TABLE_REACTIONS, 'fil');
+  ecouter(TABLE_COMMENTAIRES, 'fil');
+  canal.subscribe();
   return () => { supabase.removeChannel(canal); };
 }

@@ -193,6 +193,64 @@ verifier "aucune colonne ne contient le poids" \
  where table_name='gs_participations' and column_name in ('poids','poids_depart','kg_depart');"
 
 echo
+echo "== Le fil : pesées publiées, réactions, vannes =="
+$PSQL -c "begin; $ALICE insert into public.gs_evenements (id,defi_id,pseudo,emoji,jour,pct,delta_kg)
+  values ('ev1','d1','Alex','🔥',current_date,4.5,-0.8); commit;" >/dev/null 2>&1
+verifier "un participant publie sa pesée" \
+"begin; $ALICE select count(*)=1 from public.gs_evenements where defi_id='d1'; commit;"
+verifier "les autres participants la voient" \
+"begin; $BOB select pseudo='Alex' from public.gs_evenements where id='ev1'; commit;"
+verifier "le compte du grill, lui, ne voit rien du fil" \
+"begin; $GRILL select count(*)=0 from public.gs_evenements; commit;"
+refuse "et ne peut pas y écrire" \
+"begin; $GRILL insert into public.gs_evenements (id,defi_id,pseudo,jour) values ('ev-intrus','d1','Intrus',current_date); commit;"
+# La base ne rejette pas l'usurpation, elle la corrige : le déclencheur repose
+# user_id sur l'auteur réel. La pesée existe donc, mais au nom de Bob.
+$PSQL -c "begin; $BOB insert into public.gs_evenements (id,defi_id,user_id,pseudo,jour)
+   values ('ev-faux','d1','11111111-1111-1111-1111-111111111111','Alex',current_date); commit;" >/dev/null 2>&1
+verifier "publier au nom d'un autre réattribue la pesée à son auteur" \
+"begin; $ALICE select user_id = '22222222-2222-2222-2222-222222222222'
+   from public.gs_evenements where id='ev-faux'; commit;"
+refuse "deux pesées le même jour pour la même personne sont refusées" \
+"begin; $ALICE insert into public.gs_evenements (id,defi_id,pseudo,jour) values ('ev-bis','d1','Alex',current_date); commit;"
+verifier "aucune colonne du fil ne porte le poids" \
+"select count(*)=0 from information_schema.columns
+ where table_name='gs_evenements' and column_name in ('poids','poids_depart','kilos');"
+
+$PSQL -c "begin; $BOB   insert into public.gs_reactions (evenement_id,emoji) values ('ev1','😂'); commit;" >/dev/null 2>&1
+$PSQL -c "begin; $CARLA insert into public.gs_reactions (evenement_id,emoji) values ('ev1','😂'); commit;" >/dev/null 2>&1
+verifier "deux réactions comptées sur la même pesée" \
+"begin; $ALICE select count(*)=2 from public.gs_reactions where evenement_id='ev1'; commit;"
+refuse "on ne réagit pas deux fois avec le même emoji" \
+"begin; $BOB insert into public.gs_reactions (evenement_id,emoji) values ('ev1','😂'); commit;"
+$PSQL -c "begin; $BOB delete from public.gs_reactions where evenement_id='ev1'; commit;" >/dev/null 2>&1
+verifier "retirer sa réaction ne retire que la sienne" \
+"begin; $ALICE select count(*)=1 from public.gs_reactions where evenement_id='ev1'; commit;"
+refuse "le compte du grill ne peut pas réagir" \
+"begin; $GRILL insert into public.gs_reactions (evenement_id,emoji) values ('ev1','💀'); commit;"
+
+$PSQL -c "begin; $BOB insert into public.gs_commentaires (id,evenement_id,pseudo,emoji,texte)
+  values ('c1','ev1','Bob','🐻','Tu remontes, ça m''embête un peu.'); commit;" >/dev/null 2>&1
+verifier "une vanne est lisible par tout le défi" \
+"begin; $CARLA select pseudo='Bob' from public.gs_commentaires where id='c1'; commit;"
+verifier "le compte du grill ne lit aucune vanne" \
+"begin; $GRILL select count(*)=0 from public.gs_commentaires; commit;"
+refuse "une vanne vide est refusée" \
+"begin; $BOB insert into public.gs_commentaires (id,evenement_id,pseudo,texte) values ('c-vide','ev1','Bob','   '); commit;"
+$PSQL -c "begin; $ALICE delete from public.gs_commentaires where id='c1'; commit;" >/dev/null 2>&1
+verifier "on n'efface pas la vanne d'un autre, même chez soi" \
+"begin; $BOB select count(*)=1 from public.gs_commentaires where id='c1'; commit;"
+$PSQL -c "begin; $BOB delete from public.gs_commentaires where id='c1'; commit;" >/dev/null 2>&1
+verifier "mais on efface la sienne" \
+"begin; $BOB select count(*)=0 from public.gs_commentaires where id='c1'; commit;"
+
+verifier "quitter un défi emporte ses pesées du fil" \
+"begin; $ALICE select count(*)=1 from public.gs_evenements where id='ev1'; commit;"
+verifier "le fil est diffusé en temps réel" \
+"select exists (select 1 from pg_publication_tables
+ where pubname='supabase_realtime' and tablename='gs_commentaires');"
+
+echo
 echo "== Garde-fous =="
 refuse "un type d'entrée inconnu est refusé" \
 "begin; $ALICE insert into public.gs_entrees (id,type,donnees) values ('x','nimporte','{}'); commit;"
