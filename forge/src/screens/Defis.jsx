@@ -1,6 +1,8 @@
 import { statutDefi, STATUTS, joursRestants, joursTotal, progressionTemps, mesureById, formatValeur } from '../lib/defis.js';
 import { formatJourMois } from '../lib/temps.js';
 import { syncActive } from '../supabase.js';
+import BoutonPartage from '../components/BoutonPartage.jsx';
+import { messageApp, lienApp } from '../lib/partage.js';
 
 function Carte({ defi, maintenant, onOuvrir }) {
   const statut = statutDefi(defi, maintenant);
@@ -34,6 +36,7 @@ function Carte({ defi, maintenant, onOuvrir }) {
 }
 
 export default function Defis({ defis, chargement, erreur, maintenant, onOuvrir, onCreer, onRejoindre, onRafraichir, onExemple }) {
+  const invitation = messageApp(lienApp(typeof window === 'undefined' ? '' : window.location.href));
   const enCours = defis.filter((d) => statutDefi(d, maintenant) === 'en_cours');
   const aVenir = defis.filter((d) => statutDefi(d, maintenant) === 'a_venir');
   const termines = defis.filter((d) => statutDefi(d, maintenant) === 'termine');
@@ -64,6 +67,11 @@ export default function Defis({ defis, chargement, erreur, maintenant, onOuvrir,
             <button className="btn btn-ghost" type="button" onClick={onExemple} style={{ marginTop: 16 }}>
               Voir à quoi ça ressemble
             </button>
+            {/* Envoyer l'application ne demande pas de compte : c'est même
+                comme ça qu'on en trouve d'autres à qui se mesurer. */}
+            <div style={{ marginTop: 10 }}>
+              <BoutonPartage {...invitation} libelle="Partager Gros Sac" classe="btn btn-quiet btn-sm" />
+            </div>
           </div>
         ) : (
           <>
@@ -106,6 +114,15 @@ export default function Defis({ defis, chargement, erreur, maintenant, onOuvrir,
                 </section>
               ) : null,
             )}
+
+            <section className="carte">
+              <div className="carte-tete"><span className="eyebrow acier">Faire venir du monde</span></div>
+              <p className="aide" style={{ marginBottom: 10 }}>
+                Sans adversaire, un défi n’est qu’un tableau de chiffres. Envoie l’application à qui tu
+                comptes battre — le défi, tu l’enverras de l’intérieur.
+              </p>
+              <BoutonPartage {...invitation} libelle="Partager Gros Sac" classe="btn btn-ghost btn-block" />
+            </section>
           </>
         )}
       </div>

@@ -13,6 +13,7 @@ const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
   const server = await start();
   const b = await chromium.launch({ executablePath: EXE });
   const ctx = await b.newContext({ viewport: { width: 390, height: 800 }, hasTouch: true, isMobile: true, locale: 'fr-FR' });
+  await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: server.base });
   const pg = await ctx.newPage();
   const erreurs = [];
   pg.on('pageerror', (e) => erreurs.push('exception: ' + e.message));
@@ -276,6 +277,37 @@ const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
   ok((await pg.locator('.topbar h1').textContent()).includes('Défis'), 'l’onglet Défis s’ouvre');
   ok((await pg.locator('.vide h3').textContent()).includes('demandent un compte'), 'et annonce qu’il faut un compte');
   ok(await pg.getByRole('button', { name: 'Créer un défi' }).count() === 0, 'sans proposer de créer un défi');
+
+  // Inviter du monde sur l'application ne demande pas de compte. Sans feuille
+  // de partage — le cas de ce navigateur —, le message part au presse-papiers.
+  const bouton = pg.locator('.vide button.btn-quiet');
+  ok(await pg.getByRole('button', { name: 'Partager Gros Sac' }).count() === 1,
+    'et propose quand même d’envoyer l’application');
+  ok(await pg.evaluate(() => navigator.share === undefined), 'ce navigateur n’a pas de feuille de partage');
+  await bouton.click();
+  await attendre(300);
+  // Le libellé du bouton change : on le suit par sa place, pas par son nom.
+  ok((await bouton.textContent()).includes('copié'), 'à défaut, le message est copié');
+  const presse = await pg.evaluate(() => navigator.clipboard.readText());
+  ok(presse.includes('Gros Sac'), 'le message copié nomme l’application');
+  ok(/https?:\/\/[^\s]+/.test(presse), 'et porte le lien');
+  ok(!presse.includes('defi='), 'inviter sur l’app n’inscrit à aucun défi');
+
+  // Quand la feuille de partage existe, c'est elle qui reçoit tout.
+  await pg.evaluate(() => {
+    window.__partage = null;
+    navigator.share = async (d) => { window.__partage = d; };
+  });
+  await attendre(2600);   // le temps que le bouton reprenne son libellé
+  ok((await bouton.textContent()).includes('Partager'), 'le bouton reprend son libellé');
+  await bouton.click();
+  await attendre(300);
+  const charge = await pg.evaluate(() => window.__partage);
+  ok(!!charge && charge.text.includes('Gros Sac'), 'la feuille de partage reçoit le texte');
+  ok(!!charge && /^https?:\/\//.test(charge.url || ''), 'et le lien à part, pour qu’il ne sorte pas deux fois');
+  ok(!!charge && !charge.text.includes('http'), 'le texte ne répète pas le lien');
+  await pg.evaluate(() => { delete navigator.share; });
+
   await pg.locator('.nav button', { hasText: 'Accueil' }).click();
   await attendre(300);
   ok(await pg.locator('.entete-accueil').isVisible(), 'retour à l’accueil');
@@ -295,6 +327,9 @@ const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
   ok(await pg.locator('.evt .phrase').count() > 0, 'des vannes sont proposées');
   ok(await pg.getByRole('button', { name: 'Poser ma pesée de départ' }).count() === 0,
     'aucune invitation à se peser : ce n’est pas ton défi');
+  ok((await pg.locator('.code-valeur').textContent()).length === 6, 'le code d’invitation est affiché');
+  ok(await pg.getByRole('button', { name: 'Partager le défi' }).isDisabled(),
+    'mais on ne partage pas un défi inventé');
   // Rien n'est enregistré : on le dit plutôt que de laisser croire.
   await pg.locator('.evt .reac').first().click();
   await attendre(300);
@@ -310,6 +345,16 @@ const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
   await pg.goBack();
   await attendre(300);
   ok(await pg.locator('.nav').isVisible(), 'retour du navigateur : on revient à l’accueil sans quitter');
+
+  console.log('\n== Lien d’invitation ==');
+  // Un lien ?defi=CODE doit mener droit au défi. Sans Supabase il n'y a aucun
+  // compte pour le rejoindre : on le dit, et le paramètre quitte l'adresse
+  // pour qu'un rechargement ne rouvre pas l'écran tout seul.
+  await pg.goto(server.base + '?defi=ABC234', { waitUntil: 'networkidle' });
+  await attendre(700);
+  ok((await pg.locator('.toast').textContent()).includes('défi'), 'le lien d’invitation est reconnu');
+  ok(!(await pg.evaluate(() => location.search)).includes('defi='), 'et le code quitte l’adresse');
+  await attendre(3200);
 
   console.log('\n== Erreurs ==');
   ok(erreurs.length === 0, 'aucune erreur JavaScript' + (erreurs.length ? ' : ' + erreurs.join(' | ') : ''));

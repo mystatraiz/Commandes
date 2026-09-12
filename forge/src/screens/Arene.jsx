@@ -3,10 +3,12 @@ import Feuille from '../components/Feuille.jsx';
 import Anneau from '../components/Anneau.jsx';
 import CourbesDefi from '../components/CourbesDefi.jsx';
 import Fil from '../components/Fil.jsx';
+import BoutonPartage from '../components/BoutonPartage.jsx';
 import {
   statutDefi, STATUTS, joursRestants, joursTotal, progressionTemps,
   mesureById, formatValeur, ecartAuDessus, VISIBILITES, VISIBILITE_DEFAUT,
 } from '../lib/defis.js';
+import { messageDefi, lienDefi } from '../lib/partage.js';
 import { formatDateCourte, formatJourMois } from '../lib/temps.js';
 
 const MEDAILLES = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -58,6 +60,10 @@ export default function Arene({
   // cherche pourquoi il manque quelqu'un sur le graphique.
   const discrets = classement.filter((p) => p.visibilite === 'rang' && !p.moi);
   const visibilite = defi.participation?.visibilite || VISIBILITE_DEFAUT;
+
+  // Le lien se construit sur l'adresse où l'on tourne : rien à reconfigurer
+  // entre l'aperçu Vercel, le domaine et le développement local.
+  const adresse = typeof window === 'undefined' ? '' : window.location.href;
 
   const copier = async () => {
     try {
@@ -208,7 +214,23 @@ export default function Arene({
         {statut !== 'termine' && (
           <section className="carte">
             <div className="carte-tete"><span className="eyebrow acier">Inviter</span></div>
-            <p className="aide" style={{ marginBottom: 8 }}>Envoie ce code à qui tu veux voir dans la course.</p>
+            {defi.demo ? (
+              <>
+                <p className="aide" style={{ marginBottom: 10 }}>
+                  Dans un vrai défi, ce bouton envoie le lien et le code d’un seul geste. Ici, il n’y a
+                  personne à inviter.
+                </p>
+                <button className="btn btn-ghost btn-block" type="button" disabled>Partager le défi</button>
+              </>
+            ) : (
+              <>
+                <p className="aide" style={{ marginBottom: 10 }}>
+                  Le lien ouvre l’application avec le code déjà rempli. À balancer dans le groupe.
+                </p>
+                <BoutonPartage {...messageDefi(defi, lienDefi(defi.code, adresse))} libelle="Partager le défi" />
+              </>
+            )}
+            <p className="aide" style={{ margin: '12px 0 8px' }}>Ou dicte le code :</p>
             <button className="code-partage" type="button" onClick={copier}>
               <span className="code-valeur tabular">{defi.code}</span>
               <span className="code-action">{copie ? 'Copié ✓' : 'Copier'}</span>

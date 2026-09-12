@@ -15,6 +15,24 @@ d'invitation de six lettres**. On le crée, on envoie le code, les autres
 entrent le code, choisissent leur pseudo et se pèsent. Trois âges, trois
 écrans : la salle d'attente, l'arène, le palmarès.
 
+### Inviter
+
+Un bouton **Partager** dans l'arène ouvre la feuille de partage du téléphone —
+celle qui connaît les groupes et les SMS — avec le nom du défi, le gage, le
+code en clair et un **lien qui remplit le code tout seul** à l'arrivée. Le code
+reste écrit en gros à côté, pour qui préfère le dicter.
+
+Le lien porte le code en paramètre (`?defi=ABC234`). À l'ouverture,
+l'application le lit, file droit sur l'écran « Rejoindre », lance l'aperçu du
+défi, puis **retire le paramètre de l'adresse** : sans ça, chaque rechargement
+rouvrirait l'écran tout seul. Un code tronqué ou inventé est ignoré comme s'il
+n'était pas là.
+
+L'onglet Défis propose aussi d'envoyer **l'application** sans code de défi —
+utile quand il n'y a encore personne à battre. Faute de feuille de partage, sur
+un navigateur de bureau, le message part au presse-papiers ; et si celui-ci est
+refusé, il s'affiche à recopier plutôt que d'échouer sans rien dire.
+
 **La mesure est le pourcentage du poids de départ**, réglable en kilos par
 celui qui crée. Sans ça, celui qui part à 110 kg écrase mécaniquement celui qui
 part à 75, et le défi meurt au bout d'une semaine faute d'enjeu.
@@ -154,9 +172,11 @@ npm test          # unitaires, navigateur, schéma
 `npm test` enchaîne :
 
 - `test/*.test.mjs` — les fonctions pures : arbitrage de synchronisation,
-  séries jour par jour, XP et badges, adaptation des circuits au temps, et
+  séries jour par jour, XP et badges, adaptation des circuits au temps,
   **les défis** (périodes, choix du poids de départ, classement avec ex æquo,
-  et le fait que le poids absolu ne figure dans rien de ce qui est publié) ;
+  et le fait que le poids absolu ne figure dans rien de ce qui est publié) et
+  **les invitations** (aller-retour du code dans un lien, code douteux écarté,
+  lien jamais répété dans le texte du message) ;
 - `test/app.test.cjs` — le parcours complet dans un navigateur mobile simulé ;
 - `test/schema.test.sh` — le schéma sur un vrai PostgreSQL avec **quatre
   comptes** : les pesées restent privées, un défi n'existe pas pour qui n'y
@@ -184,9 +204,10 @@ src/
                           Jeune, Poids, Sport, FormSession, Renfo, Lecteur,
                           Echauffement, Courbes, Profil, Connexion
   components/             Graphique, CourbesDefi, Fil, Anneau, Nav, Feuille,
-                          Toast, MajPWA
+                          BoutonPartage, Toast, MajPWA
   lib/
     defis.js              périodes, progrès, classement — le cœur du jeu
+    partage.js            liens d'invitation et messages
     chambrage.js          430 vannes et leur tirage déterministe
     demo.js               le défi d'exemple, entièrement inventé
     jeune.js              objectifs, phases, heures par journée

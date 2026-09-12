@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { VISIBILITES, VISIBILITE_DEFAUT, codeValide, normaliserCode, LONGUEUR_CODE, mesureById, joursTotal } from '../lib/defis.js';
 import { formatDateCourte } from '../lib/temps.js';
 import { EMOJIS } from './Connexion.jsx';
 
-/** Deux temps : on regarde ce que cache le code, puis on s'engage. */
-export default function RejoindreDefi({ profil, onApercu, onRejoindre, onRetour }) {
-  const [code, setCode] = useState('');
+/*
+  Deux temps : on regarde ce que cache le code, puis on s'engage.
+
+  Le code peut arriver par un lien d'invitation. Dans ce cas il est déjà là et
+  l'aperçu part tout seul : faire retaper six caractères qu'on vient de recevoir
+  n'apporte rien.
+*/
+export default function RejoindreDefi({ profil, codeInitial, onApercu, onRejoindre, onRetour }) {
+  const [code, setCode] = useState(() => normaliserCode(codeInitial || '').slice(0, LONGUEUR_CODE));
   const [defi, setDefi] = useState(null);
   const [pseudo, setPseudo] = useState(profil?.pseudo || '');
   const [emoji, setEmoji] = useState(profil?.emoji || '💪');
@@ -14,7 +20,7 @@ export default function RejoindreDefi({ profil, onApercu, onRejoindre, onRetour 
   const [enCours, setEnCours] = useState(false);
 
   const regarder = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!codeValide(code) || enCours) return;
     setEnCours(true);
     setErreur(null);
@@ -22,6 +28,15 @@ export default function RejoindreDefi({ profil, onApercu, onRejoindre, onRetour 
     setEnCours(false);
     if (r.ok) setDefi(r.defi); else setErreur(r.message);
   };
+
+  // Une seule fois : l'aperçu du code apporté par le lien.
+  const auto = useRef(false);
+  useEffect(() => {
+    if (auto.current || !codeValide(code)) return;
+    auto.current = true;
+    regarder();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const entrer = async () => {
     if (pseudo.trim().length < 2 || enCours) return;
@@ -36,7 +51,10 @@ export default function RejoindreDefi({ profil, onApercu, onRejoindre, onRetour 
     <div className="ecran">
       <header className="topbar">
         <button className="btn btn-ghost btn-icon" type="button" onClick={onRetour} aria-label="Retour">←</button>
-        <div className="titre"><h1>Rejoindre</h1><span className="sous">Entre le code qu’on t’a envoyé</span></div>
+        <div className="titre">
+          <h1>Rejoindre</h1>
+          <span className="sous">{codeInitial ? 'Le lien a apporté le code' : 'Entre le code qu’on t’a envoyé'}</span>
+        </div>
       </header>
 
       <div className="contenu">

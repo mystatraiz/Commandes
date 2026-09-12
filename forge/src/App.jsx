@@ -7,6 +7,7 @@ import { REGLAGES_DEFAUT, calculerXp, resume as calculerResume } from './lib/gam
 import { jeuneEnCours } from './lib/jeune.js';
 import { calculerProgres, aPublier, evenementAPublier, statutDefi, VISIBILITE_DEFAUT } from './lib/defis.js';
 import { DEFI_DEMO, CLASSEMENT_DEMO, FIL_DEMO } from './lib/demo.js';
+import { codeDepuisLien, lienApp } from './lib/partage.js';
 import { pesees } from './lib/series.js';
 import { ECHAUFFEMENT_PADEL, dureeEchauffementS } from './lib/echauffement.js';
 import { cleJour, useHorloge, formatHeures } from './lib/temps.js';
@@ -58,16 +59,24 @@ export default function App() {
   const maintenant = useHorloge(1000);
   const minute = Math.floor(maintenant / 60000);
 
+  // Le code apporté par un lien d'invitation, lu une fois pour toutes avant
+  // que la navigation ne réécrive l'adresse.
+  const [codeInvite] = useState(() => codeDepuisLien(window.location.href));
+
   /* ---------------- Navigation ---------------- */
 
   useEffect(() => {
-    window.history.replaceState({ profondeur: 0 }, '');
+    // Le paramètre d'invitation quitte l'adresse aussitôt : sinon chaque
+    // rechargement relancerait l'écran « Rejoindre » sans qu'on l'ait demandé.
+    if (codeInvite) window.history.replaceState({ profondeur: 0 }, '', lienApp(window.location.href));
+    else window.history.replaceState({ profondeur: 0 }, '');
     const surRetour = (e) => {
       const p = e.state?.profondeur ?? 0;
       setPile((ancienne) => (p < ancienne.length ? ancienne.slice(0, p) : ancienne));
     };
     window.addEventListener('popstate', surRetour);
     return () => window.removeEventListener('popstate', surRetour);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const ouvrir = useCallback((nom, params = {}) => {
@@ -265,6 +274,24 @@ export default function App() {
     return () => { vivant = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vivantes, defis, connecte, jourCourant, profil, chargerFil]);
+
+  /*
+    Lien d'invitation. On file droit à l'écran « Rejoindre », code en poche —
+    une seule fois, et seulement quand il y a un compte derrière : sans
+    Supabase, un défi n'existe pas et mieux vaut le dire que d'ouvrir un écran
+    qui ne mène nulle part.
+  */
+  const inviteTraitee = useRef(false);
+  useEffect(() => {
+    if (inviteTraitee.current || !codeInvite || !pret || !connecte) return;
+    inviteTraitee.current = true;
+    if (!syncActive) {
+      montrerToast('Ce lien mène à un défi, mais cette installation n’est pas reliée à un compte.');
+      return;
+    }
+    setOnglet('defis');
+    ouvrir('rejoindre-defi', { codeInitial: codeInvite });
+  }, [codeInvite, pret, connecte, ouvrir, montrerToast]);
 
   const creerDefi = useCallback(async (champs) => {
     const r = await api.creer(champs);
@@ -464,7 +491,7 @@ export default function App() {
   else if (ecran?.nom === 'echauffement') vue = <Echauffement onLancer={lancerEchauffement} onRetour={retour} />;
   else if (ecran?.nom === 'lecteur') vue = <Lecteur key={ecran.plan.titre} plan={ecran.plan} reglages={reglages} onTerminer={terminerLecteur} onQuitter={retour} />;
   else if (ecran?.nom === 'creer-defi') vue = <CreerDefi profil={profil} maintenant={maintenant} onCreer={creerDefi} onRetour={retour} />;
-  else if (ecran?.nom === 'rejoindre-defi') vue = <RejoindreDefi profil={profil} onApercu={api.apercu} onRejoindre={rejoindreDefi} onRetour={retour} />;
+  else if (ecran?.nom === 'rejoindre-defi') vue = <RejoindreDefi profil={profil} codeInitial={ecran.codeInitial} onApercu={api.apercu} onRejoindre={rejoindreDefi} onRetour={retour} />;
   else if (ecran?.nom === 'arene') {
     const demo = ecran.defiId === 'demo';
     const defi = demo ? DEFI_DEMO : defis.find((d) => d.id === ecran.defiId);
