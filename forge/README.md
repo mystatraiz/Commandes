@@ -79,6 +79,15 @@ publie. Quelqu'un de déterminé pourrait donc publier un faux chiffre. Entre
 potes, c'est un problème social, pas technique — et c'est le prix pour que
 personne n'hésite à rejoindre.
 
+### Voir avant de se lancer
+
+Une arène vide ne ressemble à rien : au premier lancement, ou tant que les
+copains n'ont pas rejoint, il n'y a ni courbe ni fil à regarder. L'onglet Défis
+propose donc **un défi d'exemple** — cinq joueurs inventés, dix-huit jours de
+pesées — qui montre le rendu en vrai, et fonctionne même sans compte ni
+Supabase. Il s'annonce comme tel, et aucun geste n'y enregistre quoi que ce
+soit.
+
 ## Le reste, inchangé
 
 **Jeûne** — objectifs 14:10 à OMAD, anneau, chrono, phases du corps heure par
@@ -179,6 +188,7 @@ src/
   lib/
     defis.js              périodes, progrès, classement — le cœur du jeu
     chambrage.js          430 vannes et leur tirage déterministe
+    demo.js               le défi d'exemple, entièrement inventé
     jeune.js              objectifs, phases, heures par journée
     series.js             séries jour par jour, normalisation
     gamification.js       XP, niveaux, série, missions, badges

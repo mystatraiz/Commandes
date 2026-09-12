@@ -33,7 +33,7 @@ function Carte({ defi, maintenant, onOuvrir }) {
   );
 }
 
-export default function Defis({ defis, chargement, erreur, maintenant, onOuvrir, onCreer, onRejoindre, onRafraichir }) {
+export default function Defis({ defis, chargement, erreur, maintenant, onOuvrir, onCreer, onRejoindre, onRafraichir, onExemple }) {
   const enCours = defis.filter((d) => statutDefi(d, maintenant) === 'en_cours');
   const aVenir = defis.filter((d) => statutDefi(d, maintenant) === 'a_venir');
   const termines = defis.filter((d) => statutDefi(d, maintenant) === 'termine');
@@ -61,6 +61,9 @@ export default function Defis({ defis, chargement, erreur, maintenant, onOuvrir,
               Il faut configurer Supabase pour que plusieurs personnes puissent courir ensemble.
               Le reste de l’application fonctionne sans, sur cet appareil.
             </p>
+            <button className="btn btn-ghost" type="button" onClick={onExemple} style={{ marginTop: 16 }}>
+              Voir à quoi ça ressemble
+            </button>
           </div>
         ) : (
           <>
@@ -81,7 +84,16 @@ export default function Defis({ defis, chargement, erreur, maintenant, onOuvrir,
                   Crée-en un, envoie le code à tes potes, et que le meilleur gagne.
                   Ou entre le code que quelqu’un t’a envoyé.
                 </p>
+                <button className="btn btn-ghost" type="button" onClick={onExemple} style={{ marginTop: 16 }}>
+                  Voir à quoi ça ressemble
+                </button>
               </div>
+            )}
+
+            {defis.length > 0 && (
+              <button className="btn btn-quiet btn-sm" type="button" onClick={onExemple} style={{ alignSelf: 'center' }}>
+                Voir un défi d’exemple
+              </button>
             )}
 
             {[['En cours', enCours], ['À venir', aVenir], ['Terminés', termines]].map(([titre, liste]) =>

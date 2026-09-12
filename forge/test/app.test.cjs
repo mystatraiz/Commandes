@@ -280,6 +280,30 @@ const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
   await attendre(300);
   ok(await pg.locator('.entete-accueil').isVisible(), 'retour à l’accueil');
 
+  console.log('\n== Le défi d’exemple ==');
+  // Une arène vide ne ressemble à rien : l'exemple montre le rendu avant que
+  // le groupe démarre, et il marche sans compte.
+  await pg.locator('.nav button', { hasText: 'Défis' }).click();
+  await attendre(300);
+  await pg.getByRole('button', { name: /Voir à quoi ça ressemble/ }).click();
+  await attendre(600);
+  ok((await pg.locator('.bandeau-demo').textContent()).includes('Exemple'), 'l’exemple s’annonce comme tel');
+  ok(await pg.locator('.courbes-defi .courbe').count() === 4, '4 courbes tracées (le cinquième ne montre que son rang)');
+  ok((await pg.locator('.legende').textContent()).includes('rang seul'), 'et il est nommé sous le graphique');
+  ok(await pg.locator('.classement .ligne').count() === 5, '5 au classement');
+  ok(await pg.locator('.evt').count() > 10, 'le fil est rempli');
+  ok(await pg.locator('.evt .phrase').count() > 0, 'des vannes sont proposées');
+  ok(await pg.getByRole('button', { name: 'Poser ma pesée de départ' }).count() === 0,
+    'aucune invitation à se peser : ce n’est pas ton défi');
+  // Rien n'est enregistré : on le dit plutôt que de laisser croire.
+  await pg.locator('.evt .reac').first().click();
+  await attendre(300);
+  ok((await pg.locator('.toast').textContent()).includes('exemple'), 'réagir dans l’exemple ne fait rien, et le dit');
+  await pg.goBack();
+  await attendre(400);
+  await pg.locator('.nav button', { hasText: 'Accueil' }).click();
+  await attendre(300);
+
   console.log('\n== Bouton retour ==');
   await pg.locator('.action', { hasText: 'Poids' }).click();
   await attendre(300);

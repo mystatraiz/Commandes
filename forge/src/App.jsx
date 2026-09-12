@@ -6,6 +6,7 @@ import { syncActive, sessionCourante, supabase, deconnecter, lireProfil, ecrireP
 import { REGLAGES_DEFAUT, calculerXp, resume as calculerResume } from './lib/gamification.js';
 import { jeuneEnCours } from './lib/jeune.js';
 import { calculerProgres, aPublier, evenementAPublier, statutDefi, VISIBILITE_DEFAUT } from './lib/defis.js';
+import { DEFI_DEMO, CLASSEMENT_DEMO, FIL_DEMO } from './lib/demo.js';
 import { pesees } from './lib/series.js';
 import { ECHAUFFEMENT_PADEL, dureeEchauffementS } from './lib/echauffement.js';
 import { cleJour, useHorloge, formatHeures } from './lib/temps.js';
@@ -331,6 +332,11 @@ export default function App() {
     chargerFil(defiId);
   }, [chargerFil, montrerToast]);
 
+  // Dans l'exemple, rien ne part : on le dit plutôt que de laisser croire.
+  const rienEnExemple = useCallback(() => {
+    montrerToast('C’est un exemple : rien n’est enregistré.');
+  }, [montrerToast]);
+
   const majProfil = useCallback(async ({ pseudo, emoji }) => {
     const p = await ecrireProfil({ pseudo, emoji });
     if (p) setProfil(p);
@@ -460,23 +466,27 @@ export default function App() {
   else if (ecran?.nom === 'creer-defi') vue = <CreerDefi profil={profil} maintenant={maintenant} onCreer={creerDefi} onRetour={retour} />;
   else if (ecran?.nom === 'rejoindre-defi') vue = <RejoindreDefi profil={profil} onApercu={api.apercu} onRejoindre={rejoindreDefi} onRetour={retour} />;
   else if (ecran?.nom === 'arene') {
-    const defi = defis.find((d) => d.id === ecran.defiId);
-    const c = classements[ecran.defiId] || {};
+    const demo = ecran.defiId === 'demo';
+    const defi = demo ? DEFI_DEMO : defis.find((d) => d.id === ecran.defiId);
+    const c = demo ? { lignes: CLASSEMENT_DEMO } : (classements[ecran.defiId] || {});
     if (!defi) vue = <div className="ecran"><div className="contenu"><p className="aide centre-texte">Ce défi n’est plus accessible.</p><button className="btn btn-ghost btn-block" type="button" onClick={retour}>Retour</button></div></div>;
     else {
       const mesPesees = pesees(vivantes).map((x) => ({ jour: x.jour, kg: x.donnees.kg }));
       vue = (
         <Arene
-          defi={defi} classement={c.lignes || []} evenements={fils[ecran.defiId]?.evenements || []}
-          monProgres={calculerProgres(mesPesees, defi, maintenant)}
+          defi={defi} classement={c.lignes || []}
+          evenements={demo ? FIL_DEMO : (fils[ecran.defiId]?.evenements || [])}
+          monProgres={demo ? { kg: 3.5, pct: 3.6, departEstime: false } : calculerProgres(mesPesees, defi, maintenant)}
           chargement={c.chargement} erreur={c.erreur} depuisCache={c.depuisCache} maintenant={maintenant}
-          onReagir={(evtId, emoji, actif) => reagir(evtId, emoji, actif, defi.id)}
-          onCommenter={(evtId, texte) => commenter(evtId, texte, defi.id)}
-          onSupprimerCommentaire={(id) => supprimerCommentaire(id, defi.id)}
-          onRetour={retour} onRafraichir={() => { chargerClassement(defi.id); chargerFil(defi.id); }}
-          onVisibilite={(v) => reglerVisibilite(defi.id, v)}
-          onQuitter={() => quitterDefi(defi.id)} onClore={() => cloreDefi(defi.id)}
-          onPeser={() => ouvrir('poids')}
+          onReagir={demo ? rienEnExemple : (evtId, emoji, actif) => reagir(evtId, emoji, actif, defi.id)}
+          onCommenter={demo ? rienEnExemple : (evtId, texte) => commenter(evtId, texte, defi.id)}
+          onSupprimerCommentaire={demo ? rienEnExemple : (id) => supprimerCommentaire(id, defi.id)}
+          onRetour={retour}
+          onRafraichir={demo ? rienEnExemple : () => { chargerClassement(defi.id); chargerFil(defi.id); }}
+          onVisibilite={demo ? rienEnExemple : (v) => reglerVisibilite(defi.id, v)}
+          onQuitter={demo ? rienEnExemple : () => quitterDefi(defi.id)}
+          onClore={demo ? rienEnExemple : () => cloreDefi(defi.id)}
+          onPeser={demo ? rienEnExemple : () => ouvrir('poids')}
         />
       );
     }
@@ -485,6 +495,7 @@ export default function App() {
     <Defis
       defis={defis} chargement={defisEtat.chargement} erreur={defisEtat.erreur} maintenant={maintenant}
       onOuvrir={ouvrirArene} onCreer={() => ouvrir('creer-defi')} onRejoindre={() => ouvrir('rejoindre-defi')}
+      onExemple={() => ouvrir('arene', { defiId: 'demo' })}
       onRafraichir={syncActive ? chargerDefis : null}
     />
   );
