@@ -627,3 +627,12 @@ table.data td:first-child, table.data th:first-child { text-align: left; }
   background: rgba(77,155,255,.1); box-shadow: inset 0 0 0 1px rgba(77,155,255,.3); color: var(--ink-soft);
 }
 .rappel b { color: var(--ink); }
+
+.bandeau-demo {
+  padding: 12px 14px; border-radius: var(--r-md); font-size: 13px; line-height: 1.45;
+  background: rgba(255,176,32,.1); box-shadow: inset 0 0 0 1px rgba(255,176,32,.35); color: var(--ink-soft);
+}
+.bandeau-demo b {
+  color: var(--warn); font-family: var(--display); text-transform: uppercase;
+  letter-spacing: .1em; font-size: 12px;
+}

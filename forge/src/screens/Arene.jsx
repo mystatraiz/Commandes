@@ -81,6 +81,13 @@ export default function Arene({
       </header>
 
       <div className="contenu avec-nav">
+        {defi.demo && (
+          <div className="bandeau-demo">
+            <b>Exemple</b> — cinq joueurs inventés, dix-huit jours de pesées. Rien ici n’est à toi et
+            rien n’est enregistré : c’est juste pour voir le rendu avant que ton groupe démarre.
+          </div>
+        )}
+
         <section className="carte">
           <div className="carte-tete">
             <span className="eyebrow">Où en est tout le monde</span>
