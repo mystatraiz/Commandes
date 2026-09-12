@@ -3,6 +3,42 @@ import { jeuneEnCours, dureeJeuneMs, phaseCourante } from '../lib/jeune.js';
 import { bilanPoids } from '../lib/series.js';
 import { message } from '../lib/gamification.js';
 import { formatChrono, formatHeures } from '../lib/temps.js';
+import { statutDefi, joursRestants, formatValeur, mesureById } from '../lib/defis.js';
+
+/* Le classement passe avant tout le reste : c'est lui qui fait revenir. */
+function DefiEnTete({ defi, lignes, maintenant, onOuvrir }) {
+  const moi = lignes.find((p) => p.moi) || null;
+  const restants = joursRestants(defi, maintenant);
+  const premier = lignes.find((p) => p.rang === 1) || null;
+  const meneur = moi?.rang === 1;
+
+  return (
+    <button className={`carte hero${meneur ? '' : ' feu'} defi-tete`} type="button" onClick={() => onOuvrir(defi)}>
+      <div className="rayures" />
+      <div className="carte-tete">
+        <span className={`eyebrow${meneur ? '' : ' feu'}`}>{defi.nom}</span>
+        <span className="aide">{restants} j</span>
+      </div>
+      <div className="rangee" style={{ alignItems: 'baseline' }}>
+        <div className="chiffre xl" style={{ fontSize: 52 }}>
+          {moi?.rang ? moi.rang : '—'}
+          <small>/ {lignes.length || 1}</small>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div className="chiffre md">{formatValeur(moi?.valeur, defi.mesure)}</div>
+          <div className="aide">{mesureById(defi.mesure).nom}</div>
+        </div>
+      </div>
+      <p className="aide" style={{ marginTop: 8 }}>
+        {meneur
+          ? 'Tu mènes la course. Ne lâche rien.'
+          : premier
+            ? `${premier.pseudo} est devant.`
+            : 'Personne n’a encore posé de pesée.'}
+      </p>
+    </button>
+  );
+}
 
 function Partage({ etat }) {
   if (!etat?.actif) return null;
@@ -11,7 +47,8 @@ function Partage({ etat }) {
   return <span className="lien-etat ok"><i /> Synchro</span>;
 }
 
-export default function Accueil({ entrees, reglages, resume, maintenant, etatSync, onOnglet, onOuvrir, onDemarrerJeune, onTerminerJeune }) {
+export default function Accueil({ entrees, reglages, resume, maintenant, etatSync, defis = [], classements = {}, onOnglet, onOuvrir, onOuvrirDefi, onDemarrerJeune, onTerminerJeune }) {
+  const defiEnCours = defis.find((d) => statutDefi(d, maintenant) === 'en_cours') || null;
   const jeune = jeuneEnCours(entrees);
   const { serie, niveau, missions, semaine, series7 } = resume;
   const prenom = reglages.prenom?.trim();
@@ -36,6 +73,15 @@ export default function Accueil({ entrees, reglages, resume, maintenant, etatSyn
             <small>{serie.courante > 1 ? 'jours' : 'jour'}</small>
           </div>
         </header>
+
+        {defiEnCours && (
+          <DefiEnTete
+            defi={defiEnCours}
+            lignes={classements[defiEnCours.id]?.lignes || []}
+            maintenant={maintenant}
+            onOuvrir={onOuvrirDefi}
+          />
+        )}
 
         <section className="carte">
           <div className="niveau">

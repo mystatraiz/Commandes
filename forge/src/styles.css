@@ -110,7 +110,7 @@ ul, ol { list-style: none; padding: 0; }
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
   height: calc(var(--nav-h) + var(--sab));
   padding: 6px 8px var(--sab);
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px;
   background: linear-gradient(180deg, rgba(11,13,18,.86), rgba(11,13,18,.98));
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--line);
@@ -118,7 +118,8 @@ ul, ol { list-style: none; padding: 0; }
 .nav button {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   border-radius: 12px; color: var(--ink-mute); font-family: var(--display); font-weight: 600;
-  text-transform: uppercase; letter-spacing: .08em; font-size: 11px; min-height: 50px;
+  text-transform: uppercase; letter-spacing: .04em; font-size: 10px; min-height: 50px;
+  padding: 0 2px; white-space: nowrap;
   transition: color .15s, background .15s;
 }
 .nav button svg { width: 22px; height: 22px; }
@@ -505,3 +506,44 @@ table.data td:first-child, table.data th:first-child { text-align: left; }
   margin-top: 4px; font-size: 11px; line-height: 1.5;
   font-variant-numeric: tabular-nums; color: var(--ink-mute); word-spacing: .05em;
 }
+
+/* ---------- Comptes, défis, arène ---------- */
+
+.emojis { display: flex; flex-wrap: wrap; gap: 6px; }
+.emoji {
+  width: 44px; height: 44px; border-radius: 12px; font-size: 22px; line-height: 1;
+  background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line);
+  display: grid; place-items: center;
+}
+.emoji.on { background: var(--lime); box-shadow: none; transform: scale(1.04); }
+
+.champ.code {
+  font-family: var(--display); font-weight: 800; font-size: 34px; letter-spacing: .3em;
+  text-align: center; text-transform: uppercase; min-height: 72px; padding-left: .3em;
+}
+
+.classement .ligne { gap: 10px; }
+.classement .ligne.moi { box-shadow: inset 0 0 0 2px var(--lime); background: var(--surface-2); }
+.classement .rang {
+  flex: 0 0 auto; min-width: 30px; text-align: center;
+  font-family: var(--display); font-weight: 800; font-size: 20px; color: var(--ink-soft);
+}
+.classement .ligne.moi .rang { color: var(--lime); }
+
+.code-partage {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; border-radius: var(--r-md);
+  background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line);
+}
+.code-partage:active { background: var(--surface-3); }
+.code-valeur { font-family: var(--display); font-weight: 800; font-size: 30px; letter-spacing: .22em; }
+.code-action {
+  font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+  font-size: 12px; color: var(--lime);
+}
+
+.vainqueur { display: flex; align-items: center; gap: 14px; }
+.emoji-geant { font-size: 54px; line-height: 1; }
+
+.defi-tete { display: block; text-align: left; width: 100%; }
+.defi-tete:active { transform: scale(.995); }

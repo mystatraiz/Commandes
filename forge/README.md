@@ -136,12 +136,14 @@ réglage **Root Directory** du projet Vercel, pour rien.
 ```
 supabase/schema.sql       comptes, défis, classement, règles d'accès
 src/
-  supabase.js             connexion
+  supabase.js             comptes, profil
+  defis.js                les défis côté réseau (création, code, classement)
   db.js                   IndexedDB (+ secours localStorage)
   sync.js                 synchronisation locale d'abord
   App.jsx                 navigation, données, actions
-  screens/                Accueil, Jeune, Poids, Sport, FormSession, Renfo,
-                          Lecteur, Echauffement, Courbes, Profil, Connexion
+  screens/                Accueil, Defis, CreerDefi, RejoindreDefi, Arene,
+                          Jeune, Poids, Sport, FormSession, Renfo, Lecteur,
+                          Echauffement, Courbes, Profil, Connexion
   components/             Graphique, Anneau, Nav, Feuille, Toast, MajPWA
   lib/
     defis.js              périodes, progrès, classement — le cœur du jeu
@@ -156,14 +158,20 @@ src/
 test/                     tests (+ serveur statique, générateur d'icônes)
 ```
 
+## Reprendre des données déjà saisies
+
+Rien à faire : les entrées écrites avant la création du compte portent le
+marqueur « pas encore synchronisée » et montent au premier échange, rattachées
+au compte qui vient de se connecter. Les pesées passées comptent donc dès le
+premier défi.
+
 ## Ce qui reste à faire
 
-Le socle est posé — domaine des défis, schéma, règles d'accès — mais les écrans
-ne sont pas encore branchés dessus :
-
-1. **Comptes** : inscription et connexion par e-mail, choix du pseudo et de
-   l'emoji, en remplacement du code d'accès partagé.
-2. **Écrans des défis** : liste, création, rejoindre par code, arène avec
-   classement vivant et courbes superposées des participants.
-3. **Accueil** : mettre le classement en tête, le reste dessous.
-4. **Migration** : rattacher les entrées locales existantes au compte créé.
+- **Test d'intégration à deux navigateurs** contre un faux serveur Supabase,
+  comme celui du grill : deux joueurs, un code, un classement qui bouge. Pour
+  l'instant, le serveur est couvert par le test de schéma et le client par ses
+  tests unitaires, mais le trajet complet ne l'est pas.
+- **Courbes superposées des participants** dans l'arène, pour voir qui décroche
+  et quand.
+- **Défis sport et jeûne**, quand celui du poids aura fait ses preuves : le
+  moteur est prévu pour, seule la mesure change.

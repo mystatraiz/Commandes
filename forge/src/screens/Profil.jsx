@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { OBJECTIFS_JEUNE } from '../lib/jeune.js';
-import { syncActive, COMPTE } from '../supabase.js';
+import { syncActive } from '../supabase.js';
+import { EMOJIS } from './Connexion.jsx';
 
 /*
   Relevé de la géométrie réelle de l'écran.
@@ -47,7 +48,7 @@ function Anomalie({ etat }) {
   );
 }
 
-export default function Profil({ resume, reglages, etatSync, onMajReglages, onDeconnecter, onExporter }) {
+export default function Profil({ resume, reglages, etatSync, profil, email, onMajProfil, onMajReglages, onDeconnecter, onExporter }) {
   const { niveau, serie, badges, nbBadges, journeesParfaites } = resume;
   const geo = useGeometrie();
   const [form, setForm] = useState({
@@ -58,6 +59,13 @@ export default function Profil({ resume, reglages, etatSync, onMajReglages, onDe
     poidsRef: reglages.poidsRef || 80,
   });
   const [sauve, setSauve] = useState(false);
+  const [pseudo, setPseudo] = useState(profil?.pseudo || '');
+  const [emoji, setEmoji] = useState(profil?.emoji || '💪');
+  const [sauveProfil, setSauveProfil] = useState(false);
+  // Le profil arrive après le premier rendu : on le reprend quand il tombe.
+  useEffect(() => {
+    if (profil) { setPseudo(profil.pseudo || ''); setEmoji(profil.emoji || '💪'); }
+  }, [profil]);
   const poser = (k, v) => { setForm((f) => ({ ...f, [k]: v })); setSauve(false); };
   const enregistrer = (e) => {
     e.preventDefault();
@@ -107,6 +115,35 @@ export default function Profil({ resume, reglages, etatSync, onMajReglages, onDe
           </div>
         </section>
 
+        {syncActive && (
+          <form
+            className="carte"
+            onSubmit={(e) => { e.preventDefault(); onMajProfil({ pseudo: pseudo.trim(), emoji }); setSauveProfil(true); }}
+          >
+            <div className="carte-tete"><span className="eyebrow">Ton compte</span></div>
+            <div className="champ-groupe">
+              <label htmlFor="pseudo-profil">Pseudo</label>
+              <input id="pseudo-profil" className="champ" value={pseudo} maxLength={24}
+                onChange={(e) => { setPseudo(e.target.value); setSauveProfil(false); }} />
+            </div>
+            <div className="emojis" role="radiogroup" aria-label="Ton emblème" style={{ marginTop: 10 }}>
+              {EMOJIS.map((x) => (
+                <button key={x} type="button" role="radio" aria-checked={emoji === x}
+                  className={`emoji${emoji === x ? ' on' : ''}`}
+                  onClick={() => { setEmoji(x); setSauveProfil(false); }}>{x}</button>
+              ))}
+            </div>
+            <span className="aide" style={{ display: 'block', marginTop: 8 }}>
+              C’est ce nom et cet emblème que les autres voient dans les classements.
+              {email ? ` Compte : ${email}.` : ''}
+            </span>
+            <button className="btn btn-primary btn-block" type="submit" style={{ marginTop: 12 }}
+              disabled={pseudo.trim().length < 2}>
+              {sauveProfil ? 'Enregistré ✓' : 'Enregistrer'}
+            </button>
+          </form>
+        )}
+
         <form className="carte" onSubmit={enregistrer}>
           <div className="carte-tete"><span className="eyebrow acier">Réglages</span></div>
           <div className="champ-groupe"><label htmlFor="prenom">Prénom</label><input id="prenom" className="champ" value={form.prenom} onChange={(e) => poser('prenom', e.target.value)} placeholder="Comment on t’appelle ?" /></div>
@@ -132,7 +169,7 @@ export default function Profil({ resume, reglages, etatSync, onMajReglages, onDe
           <Anomalie etat={etatSync} />
           <p className="aide" style={{ margin: '6px 0 12px' }}>
             {syncActive
-              ? `Synchronisées avec Supabase (${COMPTE}). ${etatSync.connecte ? 'Connecté.' : 'Hors ligne : tout est gardé sur l’appareil et partira au retour du réseau.'}`
+              ? `Synchronisées avec ton compte${email ? ` (${email})` : ''}. ${etatSync.connecte ? 'Connecté.' : 'Hors ligne : tout est gardé sur l’appareil et partira au retour du réseau.'}`
               : 'Conservées sur cet appareil uniquement : la synchronisation Supabase n’est pas configurée.'}
           </p>
           <div className="rangee">

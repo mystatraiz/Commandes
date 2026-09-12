@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as db from './db.js';
 import * as sync from './sync.js';
-import { syncActive, sessionCourante, supabase, deconnecter } from './supabase.js';
+import * as api from './defis.js';
+import { syncActive, sessionCourante, supabase, deconnecter, lireProfil, ecrireProfil } from './supabase.js';
 import { REGLAGES_DEFAUT, calculerXp, resume as calculerResume } from './lib/gamification.js';
 import { jeuneEnCours } from './lib/jeune.js';
+import { calculerProgres, aPublier, statutDefi } from './lib/defis.js';
+import { pesees } from './lib/series.js';
 import { ECHAUFFEMENT_PADEL, dureeEchauffementS } from './lib/echauffement.js';
 import { cleJour, useHorloge, formatHeures } from './lib/temps.js';
 import { dureeJeuneH } from './lib/jeune.js';
@@ -21,16 +24,26 @@ import Echauffement from './screens/Echauffement.jsx';
 import Lecteur from './screens/Lecteur.jsx';
 import Courbes from './screens/Courbes.jsx';
 import Profil from './screens/Profil.jsx';
+import Defis from './screens/Defis.jsx';
+import CreerDefi from './screens/CreerDefi.jsx';
+import RejoindreDefi from './screens/RejoindreDefi.jsx';
+import Arene from './screens/Arene.jsx';
 
 const nouvelId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 const vibrer = (ms) => { try { navigator.vibrate?.(ms); } catch {} };
-const ONGLETS = ['accueil', 'jeune', 'sport', 'courbes', 'profil'];
+const ONGLETS = ['accueil', 'defis', 'jeune', 'sport', 'courbes', 'profil'];
+const nb = (x) => (x === null || x === undefined || x === '' ? null : Number(x));
 
 export default function App() {
   const [entrees, setEntrees] = useState([]);
   const [pret, setPret] = useState(false);
   const [connecte, setConnecte] = useState(!syncActive);
   const [etatSync, setEtatSync] = useState(sync.etatSync());
+  const [profil, setProfil] = useState(null);
+  const [emailCompte, setEmailCompte] = useState(null);
+  const [defis, setDefis] = useState([]);
+  const [defisEtat, setDefisEtat] = useState({ chargement: false, erreur: null });
+  const [classements, setClassements] = useState({});   // defiId -> { lignes, erreur, chargement, depuisCache }
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(0);
 
@@ -148,6 +161,141 @@ export default function App() {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  /* ---------------- Défis ---------------- */
+
+  const chargerDefis = useCallback(async () => {
+    if (!syncActive || !connecte) return;
+    setDefisEtat((e) => ({ ...e, chargement: true }));
+    const r = await api.mesDefis();
+    const moi = (await sessionCourante())?.user?.id || null;
+    const liste = (r.defis || []).map((d) => ({ ...d, estCreateur: d.createur === moi }));
+    setDefis(liste);
+    setDefisEtat({ chargement: false, erreur: r.ok ? null : r.message });
+    // L'accueil montre le rang du défi en cours : il lui faut le classement.
+    for (const d of liste) {
+      if (statutDefi(d, Date.now()) === 'en_cours') chargerClassementRef.current?.(d.id);
+    }
+  }, [connecte]);
+
+  // Référence plutôt qu'une dépendance : les deux chargements s'appellent l'un
+  // l'autre, et se déclarer mutuellement ferait tourner les effets en boucle.
+  const chargerClassementRef = useRef(null);
+
+  const chargerClassement = useCallback(async (defiId) => {
+    if (!syncActive) return;
+    setClassements((c) => ({ ...c, [defiId]: { ...(c[defiId] || {}), chargement: true } }));
+    const r = await api.classement(defiId);
+    setClassements((c) => ({
+      ...c,
+      [defiId]: { lignes: r.lignes || [], erreur: r.ok ? null : r.message, depuisCache: r.depuisCache, chargement: false },
+    }));
+  }, []);
+  chargerClassementRef.current = chargerClassement;
+
+  useEffect(() => {
+    if (!syncActive || !connecte) return;
+    lireProfil().then((p) => setProfil(p));
+    sessionCourante().then((s) => setEmailCompte(s?.user?.email || null));
+    chargerDefis();
+  }, [connecte, chargerDefis]);
+
+  // Le classement des autres bouge sans qu'on touche à rien.
+  useEffect(() => {
+    if (!syncActive || !connecte) return;
+    return api.surChangement((defiId) => {
+      if (defiId) chargerClassement(defiId);
+      else chargerDefis();
+    });
+  }, [connecte, chargerClassement, chargerDefis]);
+
+  /* Publication de la progression.
+
+     L'appareil calcule à partir de ses seules pesées et n'envoie que ce que le
+     réglage de visibilité autorise. On ne réécrit que si la valeur a bougé,
+     sinon chaque écriture relancerait un rechargement, qui relancerait une
+     écriture. */
+  const jourCourant = cleJour(maintenant);
+  useEffect(() => {
+    if (!syncActive || !connecte || !defis.length) return;
+    let vivant = true;
+    (async () => {
+      const mesPesees = pesees(vivantes).map((x) => ({ jour: x.jour, kg: x.donnees.kg }));
+      let aRecharger = false;
+      for (const d of defis) {
+        if (!vivant) return;
+        const progres = calculerProgres(mesPesees, d, Date.now());
+        const envoi = aPublier(progres, d, d.participation?.visibilite || 'pourcentage');
+        const p = d.participation;
+        const identique = nb(p?.valeur) === envoi.valeur && nb(p?.pct) === envoi.pct && nb(p?.kg) === envoi.kg;
+        if (identique) continue;
+        const r = await api.publier(d.id, envoi);
+        if (r.ok) aRecharger = true;
+      }
+      if (vivant && aRecharger) chargerDefis();
+    })();
+    return () => { vivant = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vivantes, defis, connecte, jourCourant]);
+
+  const creerDefi = useCallback(async (champs) => {
+    const r = await api.creer(champs);
+    if (!r.ok) return r;
+    await chargerDefis();
+    fermerTout();
+    setOnglet('defis');
+    montrerToast(`Défi créé. Le code est ${r.defi.code}.`);
+    return r;
+  }, [chargerDefis, fermerTout, montrerToast]);
+
+  const rejoindreDefi = useCallback(async (champs) => {
+    const r = await api.rejoindre(champs);
+    if (!r.ok) return r;
+    await chargerDefis();
+    fermerTout();
+    setOnglet('defis');
+    montrerToast('Te voilà dans la course.');
+    return r;
+  }, [chargerDefis, fermerTout, montrerToast]);
+
+  const ouvrirArene = useCallback((defi) => {
+    chargerClassement(defi.id);
+    ouvrir('arene', { defiId: defi.id });
+  }, [chargerClassement, ouvrir]);
+
+  const reglerVisibilite = useCallback(async (defiId, visibilite) => {
+    const r = await api.reglerVisibilite(defiId, visibilite);
+    if (!r.ok) { montrerToast(r.message); return; }
+    await chargerDefis();
+    chargerClassement(defiId);
+    montrerToast('Visibilité mise à jour.');
+  }, [chargerDefis, chargerClassement, montrerToast]);
+
+  const quitterDefi = useCallback(async (defiId) => {
+    const r = await api.quitter(defiId);
+    if (!r.ok) { montrerToast(r.message); return; }
+    await chargerDefis();
+    fermerTout();
+    setOnglet('defis');
+    montrerToast('Défi quitté. Tes pesées restent.');
+  }, [chargerDefis, fermerTout, montrerToast]);
+
+  const majProfil = useCallback(async ({ pseudo, emoji }) => {
+    const p = await ecrireProfil({ pseudo, emoji });
+    if (p) setProfil(p);
+    // Le pseudo est recopié dans chaque participation : on le répercute pour
+    // que le classement n'affiche pas l'ancien.
+    for (const d of defis) await api.majPseudo(d.id, { pseudo: p?.pseudo || pseudo, emoji });
+    if (defis.length) chargerDefis();
+    montrerToast('Profil mis à jour.');
+  }, [defis, chargerDefis, montrerToast]);
+
+  const cloreDefi = useCallback(async (defiId) => {
+    const r = await api.clore(defiId);
+    if (!r.ok) { montrerToast(r.message); return; }
+    await chargerDefis();
+    montrerToast('Défi clos.');
+  }, [chargerDefis, montrerToast]);
+
   /* ---------------- Jeûne ---------------- */
 
   const demarrerJeune = useCallback(async (objectifH, debut = Date.now()) => {
@@ -228,7 +376,12 @@ export default function App() {
     await sync.arreter();
     await deconnecter();
     await db.vider();
+    api.viderCache();
     setEntrees([]);
+    setDefis([]);
+    setClassements({});
+    setProfil(null);
+    setEmailCompte(null);
     setConnecte(false);
   }, []);
 
@@ -251,11 +404,46 @@ export default function App() {
   else if (ecran?.nom === 'renfo') vue = <Renfo onLancer={lancerCircuit} onRetour={retour} />;
   else if (ecran?.nom === 'echauffement') vue = <Echauffement onLancer={lancerEchauffement} onRetour={retour} />;
   else if (ecran?.nom === 'lecteur') vue = <Lecteur key={ecran.plan.titre} plan={ecran.plan} reglages={reglages} onTerminer={terminerLecteur} onQuitter={retour} />;
+  else if (ecran?.nom === 'creer-defi') vue = <CreerDefi profil={profil} maintenant={maintenant} onCreer={creerDefi} onRetour={retour} />;
+  else if (ecran?.nom === 'rejoindre-defi') vue = <RejoindreDefi profil={profil} onApercu={api.apercu} onRejoindre={rejoindreDefi} onRetour={retour} />;
+  else if (ecran?.nom === 'arene') {
+    const defi = defis.find((d) => d.id === ecran.defiId);
+    const c = classements[ecran.defiId] || {};
+    if (!defi) vue = <div className="ecran"><div className="contenu"><p className="aide centre-texte">Ce défi n’est plus accessible.</p><button className="btn btn-ghost btn-block" type="button" onClick={retour}>Retour</button></div></div>;
+    else {
+      const mesPesees = pesees(vivantes).map((x) => ({ jour: x.jour, kg: x.donnees.kg }));
+      vue = (
+        <Arene
+          defi={defi} classement={c.lignes || []} monProgres={calculerProgres(mesPesees, defi, maintenant)}
+          chargement={c.chargement} erreur={c.erreur} depuisCache={c.depuisCache} maintenant={maintenant}
+          onRetour={retour} onRafraichir={() => chargerClassement(defi.id)}
+          onVisibilite={(v) => reglerVisibilite(defi.id, v)}
+          onQuitter={() => quitterDefi(defi.id)} onClore={() => cloreDefi(defi.id)}
+          onPeser={() => ouvrir('poids')}
+        />
+      );
+    }
+  }
+  else if (onglet === 'defis') vue = (
+    <Defis
+      defis={defis} chargement={defisEtat.chargement} erreur={defisEtat.erreur} maintenant={maintenant}
+      onOuvrir={ouvrirArene} onCreer={() => ouvrir('creer-defi')} onRejoindre={() => ouvrir('rejoindre-defi')}
+      onRafraichir={syncActive ? chargerDefis : null}
+    />
+  );
   else if (onglet === 'jeune') vue = <Jeune entrees={vivantes} reglages={reglages} maintenant={maintenant} onDemarrer={demarrerJeune} onTerminer={terminerJeune} onModifier={modifierJeune} onSupprimer={supprimer} />;
   else if (onglet === 'sport') vue = <Sport entrees={vivantes} resume={resume} maintenant={maintenant} onOuvrir={ouvrir} onSupprimer={supprimer} />;
   else if (onglet === 'courbes') vue = <Courbes entrees={vivantes} maintenant={maintenant} onOuvrirPoids={() => ouvrir('poids')} />;
-  else if (onglet === 'profil') vue = <Profil resume={resume} reglages={reglages} etatSync={etatSync} onMajReglages={majReglages} onDeconnecter={seDeconnecter} onExporter={exporter} />;
-  else vue = <Accueil entrees={vivantes} reglages={reglages} resume={resume} maintenant={maintenant} etatSync={etatSync} onOnglet={changerOnglet} onOuvrir={ouvrir} onDemarrerJeune={demarrerJeune} onTerminerJeune={terminerJeune} />;
+  else if (onglet === 'profil') vue = <Profil resume={resume} reglages={reglages} etatSync={etatSync} profil={profil} email={emailCompte}
+    onMajProfil={majProfil} onMajReglages={majReglages} onDeconnecter={seDeconnecter} onExporter={exporter} />;
+  else vue = (
+    <Accueil
+      entrees={vivantes} reglages={reglages} resume={resume} maintenant={maintenant} etatSync={etatSync}
+      defis={defis} classements={classements}
+      onOnglet={changerOnglet} onOuvrir={ouvrir} onOuvrirDefi={ouvrirArene}
+      onDemarrerJeune={demarrerJeune} onTerminerJeune={terminerJeune}
+    />
+  );
 
   return (
     <div className="app">
