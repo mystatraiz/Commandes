@@ -219,7 +219,7 @@ export default function App() {
     const blob = new Blob([JSON.stringify(vivantes, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `forge-${cleJour()}.json`;
+    a.download = `gros-sac-${cleJour()}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }, [vivantes]);

@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'fonts/*.woff2'],
       manifest: {
-        name: 'Forge — Jeûne & Sport',
-        short_name: 'Forge',
-        description: 'Suivi du jeûne, du poids et du sport : padel, renfo, courbes et défis quotidiens.',
+        name: 'Gros Sac — la course au poids perdu',
+        short_name: 'Gros Sac',
+        description: 'La course au poids perdu entre potes : défis datés, classement, jeûne, padel, renfo et courbes.',
         lang: 'fr',
         start_url: '/',
         scope: '/',

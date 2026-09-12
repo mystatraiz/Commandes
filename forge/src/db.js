@@ -4,6 +4,8 @@
    privée, réglage restrictif), on bascule sur localStorage plutôt que de
    perdre la saisie. */
 
+// Le nom de la base locale date de « Forge » et ne bouge pas : le changer
+// ferait repartir de zéro les appareils déjà installés.
 const DB_NAME = 'forge';
 const DB_VERSION = 1;
 const STORE = 'entrees';

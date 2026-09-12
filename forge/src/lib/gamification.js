@@ -254,7 +254,7 @@ const PUNCHLINES = [
   'Personne ne viendra le faire à ta place.',
   'Le corps suit la tête. Décide.',
   'Un jour de plus. C’est tout ce qu’on te demande.',
-  'Les autres dorment. Toi, tu forges.',
+  'Les autres dorment. Toi, tu bosses.',
 ];
 
 export function message(etat, maintenant = Date.now()) {

@@ -11,11 +11,11 @@ const CLE = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Le code d'accès sert de mot de passe à un compte unique : l'identifiant
 // est fixe et n'a pas à être saisi sur le téléphone.
-export const COMPTE = import.meta.env.VITE_SUPABASE_COMPTE || 'moi@forge.local';
+export const COMPTE = import.meta.env.VITE_SUPABASE_COMPTE || 'moi@grossac.local';
 
 // Préfixée pour cohabiter avec les autres applications du même projet
 // Supabase (le grill, par exemple). Doit rester en phase avec supabase/schema.sql.
-export const TABLE = 'forge_entrees';
+export const TABLE = 'gs_entrees';
 
 export const syncActive = Boolean(URL && CLE);
 
