@@ -7,6 +7,17 @@ const ONGLETS = [
     forme: <path d="M3 11.4 12 3.8l9 7.6V20a1.2 1.2 0 0 1-1.2 1.2h-4.6v-6.1H8.8v6.1H4.2A1.2 1.2 0 0 1 3 20z" />,
   },
   {
+    id: 'defis', nom: 'Défis',
+    // Coupe : le classement est l'objet central de l'application.
+    forme: (
+      <>
+        <path d="M6.6 3h10.8v5.6a5.4 5.4 0 0 1-10.8 0z" />
+        <rect x="10.7" y="12.8" width="2.6" height="4" />
+        <rect x="6.8" y="16.6" width="10.4" height="2.8" rx="1.4" />
+      </>
+    ),
+  },
+  {
     id: 'jeune', nom: 'Jeûne',
     forme: (
       <>

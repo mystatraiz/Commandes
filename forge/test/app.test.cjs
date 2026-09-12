@@ -239,7 +239,7 @@ const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
   const formes = await pg.locator('.nav button svg').evaluateAll(
     (els) => els.map((e) => e.querySelectorAll('path, rect, circle').length),
   );
-  ok(formes.length === 5 && formes.every((n) => n >= 1), `5 icônes dessinées (${formes.join(', ')} formes)`);
+  ok(formes.length === 6 && formes.every((n) => n >= 1), `6 icônes dessinées (${formes.join(', ')} formes)`);
 
   // Marges d'écran : Safari sur iOS 26 annonce jusqu'à 96 px en bas quand sa
   // barre d'outils est repliée, ce qui faisait flotter la navigation très
@@ -267,6 +267,18 @@ const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
   });
   ok(degagement, 'le bas du contenu reste dégagé sous la barre');
   await pg.evaluate(() => { document.documentElement.style.removeProperty('--sab'); document.documentElement.style.removeProperty('--sat'); });
+
+  console.log('\n== Défis sans compte ==');
+  // Sans Supabase, les défis n'ont personne contre qui courir : l'onglet doit
+  // le dire au lieu de tourner dans le vide.
+  await pg.locator('.nav button', { hasText: 'Défis' }).click();
+  await attendre(300);
+  ok((await pg.locator('.topbar h1').textContent()).includes('Défis'), 'l’onglet Défis s’ouvre');
+  ok((await pg.locator('.vide h3').textContent()).includes('demandent un compte'), 'et annonce qu’il faut un compte');
+  ok(await pg.getByRole('button', { name: 'Créer un défi' }).count() === 0, 'sans proposer de créer un défi');
+  await pg.locator('.nav button', { hasText: 'Accueil' }).click();
+  await attendre(300);
+  ok(await pg.locator('.entete-accueil').isVisible(), 'retour à l’accueil');
 
   console.log('\n== Bouton retour ==');
   await pg.locator('.action', { hasText: 'Poids' }).click();
