@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Feuille from '../components/Feuille.jsx';
 import Anneau from '../components/Anneau.jsx';
+import CourbesDefi from '../components/CourbesDefi.jsx';
+import Fil from '../components/Fil.jsx';
 import {
   statutDefi, STATUTS, joursRestants, joursTotal, progressionTemps,
   mesureById, formatValeur, ecartAuDessus, VISIBILITES,
@@ -33,8 +35,9 @@ function Ligne({ p, mesure }) {
 }
 
 export default function Arene({
-  defi, classement, monProgres, chargement, erreur, depuisCache, maintenant,
+  defi, classement, evenements = [], monProgres, chargement, erreur, depuisCache, maintenant,
   onRetour, onRafraichir, onVisibilite, onQuitter, onClore, onPeser,
+  onReagir, onCommenter, onSupprimerCommentaire,
 }) {
   const [feuille, setFeuille] = useState(null);
   const [copie, setCopie] = useState(false);
@@ -69,6 +72,14 @@ export default function Arene({
       </header>
 
       <div className="contenu avec-nav">
+        <section className="carte">
+          <div className="carte-tete">
+            <span className="eyebrow">Où en est tout le monde</span>
+            <span className="aide">{mesureById(mesure).court} perdu</span>
+          </div>
+          <CourbesDefi evenements={evenements} classement={classement} mesure={mesure} />
+        </section>
+
         {statut === 'termine' && premier && (
           <section className="carte hero feu">
             <div className="rayures" />
@@ -156,6 +167,17 @@ export default function Arene({
               {classement.map((p) => <Ligne key={p.userId} p={p} mesure={mesure} />)}
             </div>
           )}
+        </section>
+
+        <section>
+          <div className="carte-tete">
+            <span className="eyebrow acier">Le fil</span>
+            <span className="aide">appuie sur une phrase pour l’envoyer</span>
+          </div>
+          <Fil
+            evenements={evenements} mesure={mesure} maintenant={maintenant}
+            onReagir={onReagir} onCommenter={onCommenter} onSupprimerCommentaire={onSupprimerCommentaire}
+          />
         </section>
 
         {statut !== 'termine' && (

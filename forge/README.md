@@ -32,13 +32,37 @@ Le **gage** est une phrase libre — « le dernier paie la tournée » — affic
 grand sur le palmarès. L'application enregistre une phrase, **jamais de
 l'argent** : aucun encaissement, aucune cagnotte, rien à déclarer.
 
+### Le fil
+
+Chaque pesée publiée s'inscrit dans le fil du défi, et c'est de là que
+viennent les courbes : un point par pesée, une couleur par personne. Sous
+chacune, deux phrases sont proposées aux autres — **une pour encourager, une
+pour charrier** — envoyées en un appui, plus les réactions et les
+commentaires libres.
+
+Personne n'ouvre une application pour regarder une colonne de pourcentages.
+Ce qui fait revenir, c'est ce que les copains ont répondu.
+
+La banque compte **209 vannes positives et 221 négatives** (`src/lib/chambrage.js`),
+dans un registre de vestiaire : la moquerie porte sur l'effort, le frigo et le
+classement, jamais sur ce qu'on ne choisit pas. Le tirage est **déterministe** à
+partir de l'identifiant de la pesée : tout le monde se voit proposer la même
+paire, sinon deux personnes se répondraient sur des phrases différentes. Le
+bouton `↻` en propose une autre.
+
+Une pesée par personne et par jour : se repeser corrige la ligne du jour au
+lieu d'inonder le fil. On efface sa propre vanne, jamais celle d'un autre —
+pas même quand on a créé le défi.
+
 ### Ce que les autres voient de toi
 
 Chacun règle sa visibilité, défi par défi : **son rang seul**, **son
 pourcentage**, ou **ses kilos perdus**.
 
 **Ton poids absolu ne sort jamais**, quel que soit le réglage. Ce qui circule
-est une progression. Et ce n'est pas une politesse d'affichage : les pesées
+est une progression. Qui choisit « rang seul » n'a donc **pas de courbe** — on
+ne dessine pas ce qu'on a accepté de ne pas savoir ; il est nommé sous le
+graphique plutôt que passé sous silence. Et ce n'est pas une politesse d'affichage : les pesées
 restent dans une table que seul ton compte peut lire, la table des
 participations n'est lisible que par son propriétaire, et le classement ne
 s'obtient que par la fonction `gs_classement()`, qui masque ce que chacun a
@@ -122,8 +146,9 @@ npm test          # unitaires, navigateur, schéma
 - `test/app.test.cjs` — le parcours complet dans un navigateur mobile simulé ;
 - `test/schema.test.sh` — le schéma sur un vrai PostgreSQL avec **quatre
   comptes** : les pesées restent privées, un défi n'existe pas pour qui n'y
-  participe pas, « mon rang seul » est tenu par la base et non par l'écran, et
-  on ne contourne pas l'affichage en lisant la table.
+  participe pas, « mon rang seul » est tenu par la base et non par l'écran, on
+  ne contourne pas l'affichage en lisant la table, et le fil n'est lisible
+  qu'entre participants — chacun n'effaçant que ses propres vannes.
 
 `SHOTS=1 npm test` écrit des captures dans `test/captures/`. Si Chromium est
 ailleurs : `CHROME_PATH=/chemin/vers/chrome npm test`.
@@ -137,16 +162,18 @@ réglage **Root Directory** du projet Vercel, pour rien.
 supabase/schema.sql       comptes, défis, classement, règles d'accès
 src/
   supabase.js             comptes, profil
-  defis.js                les défis côté réseau (création, code, classement)
+  defis.js                les défis côté réseau (code, classement, fil)
   db.js                   IndexedDB (+ secours localStorage)
   sync.js                 synchronisation locale d'abord
   App.jsx                 navigation, données, actions
   screens/                Accueil, Defis, CreerDefi, RejoindreDefi, Arene,
                           Jeune, Poids, Sport, FormSession, Renfo, Lecteur,
                           Echauffement, Courbes, Profil, Connexion
-  components/             Graphique, Anneau, Nav, Feuille, Toast, MajPWA
+  components/             Graphique, CourbesDefi, Fil, Anneau, Nav, Feuille,
+                          Toast, MajPWA
   lib/
     defis.js              périodes, progrès, classement — le cœur du jeu
+    chambrage.js          430 vannes et leur tirage déterministe
     jeune.js              objectifs, phases, heures par journée
     series.js             séries jour par jour, normalisation
     gamification.js       XP, niveaux, série, missions, badges

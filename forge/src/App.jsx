@@ -5,7 +5,7 @@ import * as api from './defis.js';
 import { syncActive, sessionCourante, supabase, deconnecter, lireProfil, ecrireProfil } from './supabase.js';
 import { REGLAGES_DEFAUT, calculerXp, resume as calculerResume } from './lib/gamification.js';
 import { jeuneEnCours } from './lib/jeune.js';
-import { calculerProgres, aPublier, statutDefi } from './lib/defis.js';
+import { calculerProgres, aPublier, evenementAPublier, statutDefi } from './lib/defis.js';
 import { pesees } from './lib/series.js';
 import { ECHAUFFEMENT_PADEL, dureeEchauffementS } from './lib/echauffement.js';
 import { cleJour, useHorloge, formatHeures } from './lib/temps.js';
@@ -44,6 +44,7 @@ export default function App() {
   const [defis, setDefis] = useState([]);
   const [defisEtat, setDefisEtat] = useState({ chargement: false, erreur: null });
   const [classements, setClassements] = useState({});   // defiId -> { lignes, erreur, chargement, depuisCache }
+  const [fils, setFils] = useState({});                 // defiId -> { evenements, erreur, chargement }
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(0);
 
@@ -192,6 +193,16 @@ export default function App() {
   }, []);
   chargerClassementRef.current = chargerClassement;
 
+  const chargerFil = useCallback(async (defiId) => {
+    if (!syncActive) return;
+    setFils((f) => ({ ...f, [defiId]: { ...(f[defiId] || {}), chargement: true } }));
+    const r = await api.fil(defiId);
+    setFils((f) => ({
+      ...f,
+      [defiId]: { evenements: r.evenements || [], erreur: r.ok ? null : r.message, chargement: false },
+    }));
+  }, []);
+
   useEffect(() => {
     if (!syncActive || !connecte) return;
     lireProfil().then((p) => setProfil(p));
@@ -202,11 +213,16 @@ export default function App() {
   // Le classement des autres bouge sans qu'on touche à rien.
   useEffect(() => {
     if (!syncActive || !connecte) return;
-    return api.surChangement((defiId) => {
-      if (defiId) chargerClassement(defiId);
-      else chargerDefis();
+    return api.surChangement((quoi, defiId) => {
+      if (quoi === 'classement') {
+        if (defiId) chargerClassement(defiId); else chargerDefis();
+        return;
+      }
+      // Réactions et vannes ne portent pas l'identifiant du défi : on
+      // rafraîchit les fils déjà ouverts, seuls capables de les afficher.
+      setFils((f) => { Object.keys(f).forEach((id) => chargerFil(id)); return f; });
     });
-  }, [connecte, chargerClassement, chargerDefis]);
+  }, [connecte, chargerClassement, chargerDefis, chargerFil]);
 
   /* Publication de la progression.
 
@@ -229,13 +245,25 @@ export default function App() {
         const identique = nb(p?.valeur) === envoi.valeur && nb(p?.pct) === envoi.pct && nb(p?.kg) === envoi.kg;
         if (identique) continue;
         const r = await api.publier(d.id, envoi);
-        if (r.ok) aRecharger = true;
+        if (!r.ok) continue;
+        aRecharger = true;
+        // La même pesée entre aussi dans le fil, filtrée pareil : c'est elle
+        // qui trace les courbes et qui se commente.
+        const evt = evenementAPublier(progres, d.participation?.visibilite || 'pourcentage');
+        if (evt && evt.jour >= d.debut && evt.jour <= d.fin) {
+          await api.publierEvenement(d.id, {
+            ...evt,
+            pseudo: d.participation?.pseudo || profil?.pseudo || 'Joueur',
+            emoji: d.participation?.emoji || profil?.emoji || '💪',
+          });
+          chargerFil(d.id);
+        }
       }
       if (vivant && aRecharger) chargerDefis();
     })();
     return () => { vivant = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vivantes, defis, connecte, jourCourant]);
+  }, [vivantes, defis, connecte, jourCourant, profil, chargerFil]);
 
   const creerDefi = useCallback(async (champs) => {
     const r = await api.creer(champs);
@@ -259,8 +287,9 @@ export default function App() {
 
   const ouvrirArene = useCallback((defi) => {
     chargerClassement(defi.id);
+    chargerFil(defi.id);
     ouvrir('arene', { defiId: defi.id });
-  }, [chargerClassement, ouvrir]);
+  }, [chargerClassement, chargerFil, ouvrir]);
 
   const reglerVisibilite = useCallback(async (defiId, visibilite) => {
     const r = await api.reglerVisibilite(defiId, visibilite);
@@ -278,6 +307,29 @@ export default function App() {
     setOnglet('defis');
     montrerToast('Défi quitté. Tes pesées restent.');
   }, [chargerDefis, fermerTout, montrerToast]);
+
+  const reagir = useCallback(async (evenementId, emoji, actif, defiId) => {
+    const r = await api.reagir(evenementId, emoji, actif);
+    if (!r.ok) { montrerToast(r.message); return; }
+    chargerFil(defiId);
+  }, [chargerFil, montrerToast]);
+
+  const commenter = useCallback(async (evenementId, texte, defiId) => {
+    const defi = defis.find((d) => d.id === defiId);
+    const r = await api.commenter(evenementId, {
+      pseudo: defi?.participation?.pseudo || profil?.pseudo || 'Joueur',
+      emoji: defi?.participation?.emoji || profil?.emoji || '💪',
+      texte,
+    });
+    if (!r.ok) { montrerToast(r.message); return; }
+    chargerFil(defiId);
+  }, [defis, profil, chargerFil, montrerToast]);
+
+  const supprimerCommentaire = useCallback(async (id, defiId) => {
+    const r = await api.supprimerCommentaire(id);
+    if (!r.ok) { montrerToast(r.message); return; }
+    chargerFil(defiId);
+  }, [chargerFil, montrerToast]);
 
   const majProfil = useCallback(async ({ pseudo, emoji }) => {
     const p = await ecrireProfil({ pseudo, emoji });
@@ -380,6 +432,7 @@ export default function App() {
     setEntrees([]);
     setDefis([]);
     setClassements({});
+    setFils({});
     setProfil(null);
     setEmailCompte(null);
     setConnecte(false);
@@ -414,9 +467,13 @@ export default function App() {
       const mesPesees = pesees(vivantes).map((x) => ({ jour: x.jour, kg: x.donnees.kg }));
       vue = (
         <Arene
-          defi={defi} classement={c.lignes || []} monProgres={calculerProgres(mesPesees, defi, maintenant)}
+          defi={defi} classement={c.lignes || []} evenements={fils[ecran.defiId]?.evenements || []}
+          monProgres={calculerProgres(mesPesees, defi, maintenant)}
           chargement={c.chargement} erreur={c.erreur} depuisCache={c.depuisCache} maintenant={maintenant}
-          onRetour={retour} onRafraichir={() => chargerClassement(defi.id)}
+          onReagir={(evtId, emoji, actif) => reagir(evtId, emoji, actif, defi.id)}
+          onCommenter={(evtId, texte) => commenter(evtId, texte, defi.id)}
+          onSupprimerCommentaire={(id) => supprimerCommentaire(id, defi.id)}
+          onRetour={retour} onRafraichir={() => { chargerClassement(defi.id); chargerFil(defi.id); }}
           onVisibilite={(v) => reglerVisibilite(defi.id, v)}
           onQuitter={() => quitterDefi(defi.id)} onClore={() => cloreDefi(defi.id)}
           onPeser={() => ouvrir('poids')}

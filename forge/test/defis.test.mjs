@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { cleJour, debutJour, jourPlus } from '../src/lib/temps.js';
 import {
   statutDefi, joursTotal, joursRestants, progressionTemps, finPour,
-  calculerProgres, valeurClassement, aPublier, classer, ecartAuDessus, palmares,
+  calculerProgres, valeurClassement, aPublier, evenementAPublier, classer, ecartAuDessus, palmares,
   genererCode, normaliserCode, codeValide, LONGUEUR_CODE,
 } from '../src/lib/defis.js';
 
@@ -178,4 +178,47 @@ test('palmarès : les trois premiers seulement', () => {
   const c = classer([1, 2, 3, 4, 5].map((n) => ({ userId: `u${n}`, pseudo: `P${n}`, valeur: n })));
   assert.deepEqual(palmares(c).map((p) => p.pseudo), ['P5', 'P4', 'P3']);
   assert.deepEqual(palmares(classer([])), []);
+});
+
+test('variation depuis la pesée précédente', () => {
+  const d = defi({ debut: jourPlus(J, -10), fin: jourPlus(J, 10) });
+  const p = calculerProgres([
+    { jour: jourPlus(J, -11), kg: 100 },
+    { jour: jourPlus(J, -3), kg: 97 },
+    { jour: J, kg: 96.2 },
+  ], d, debutJour(J) + 12 * H);
+  assert.equal(p.kg, 3.8, 'perte totale');
+  assert.equal(p.deltaKg, -0.8, 'la variation est négative quand on perd');
+  assert.equal(p.deltaPct, -0.8, 'rapportée au poids de départ');
+
+  const seule = calculerProgres([{ jour: jourPlus(J, -11), kg: 100 }, { jour: J, kg: 98 }], d, debutJour(J) + 12 * H);
+  assert.equal(seule.deltaKg, null, 'une seule pesée dans la période : pas de variation');
+});
+
+test('la pesée publiée dans le fil suit la visibilité', () => {
+  const progres = { depart: 100, actuel: 96, kg: 4, pct: 4, deltaKg: -0.8, deltaPct: -0.8, derniereA: J };
+
+  const rang = evenementAPublier(progres, 'rang');
+  assert.equal(rang.jour, J);
+  assert.equal(rang.pct, null);
+  assert.equal(rang.kg, null);
+  assert.equal(rang.deltaPct, null);
+  assert.equal(rang.deltaKg, null, 'rang seul : la date part, pas les chiffres');
+
+  const pct = evenementAPublier(progres, 'pourcentage');
+  assert.equal(pct.pct, 4);
+  assert.equal(pct.deltaPct, -0.8);
+  assert.equal(pct.kg, null);
+  assert.equal(pct.deltaKg, null);
+
+  const kilos = evenementAPublier(progres, 'kilos');
+  assert.equal(kilos.kg, 4);
+  assert.equal(kilos.deltaKg, -0.8);
+
+  for (const v of ['rang', 'pourcentage', 'kilos']) {
+    const e = evenementAPublier(progres, v);
+    assert.ok(!Object.values(e).includes(100) && !Object.values(e).includes(96),
+      `le poids ne figure pas dans la pesée publiée en ${v}`);
+  }
+  assert.equal(evenementAPublier(null, 'kilos'), null);
 });

@@ -317,6 +317,136 @@ grant execute on function public.gs_rejoindre(text, text, text, text) to authent
 grant execute on function public.gs_classement(text) to authenticated;
 
 -- ------------------------------------------------------------
+-- Le fil : pesées publiées, réactions et commentaires.
+--
+-- Une pesée publiée est ce qui reste d'une pesée après le filtre de
+-- visibilité : la progression, jamais le poids. C'est elle qui alimente les
+-- courbes de l'arène, et c'est à elle que se rattachent les vannes.
+--
+-- Le pseudo est recopié ici comme dans les participations : afficher un fil
+-- ne doit pas obliger à lire la fiche des autres.
+-- ------------------------------------------------------------
+create table if not exists public.gs_evenements (
+  id         text primary key,
+  defi_id    text not null references public.gs_defis (id) on delete cascade,
+  user_id    uuid not null default auth.uid(),
+  pseudo     text not null,
+  emoji      text not null default '💪',
+  jour       date not null,
+  pct        numeric,          -- progression totale, null si « rang seul »
+  kg         numeric,          -- idem, null hors « kilos perdus »
+  delta_pct  numeric,          -- variation depuis la pesée précédente
+  delta_kg   numeric,
+  cree_a     timestamptz not null default now(),
+  maj_a      timestamptz not null default now(),
+  -- Une pesée par personne et par jour : se repeser corrige, ça n'inonde pas le fil.
+  constraint gs_evenements_unique unique (defi_id, user_id, jour)
+);
+
+create index if not exists gs_evenements_defi_idx on public.gs_evenements (defi_id, cree_a desc);
+
+create table if not exists public.gs_reactions (
+  evenement_id text not null references public.gs_evenements (id) on delete cascade,
+  user_id      uuid not null default auth.uid(),
+  emoji        text not null,
+  cree_a       timestamptz not null default now(),
+  primary key (evenement_id, user_id, emoji)
+);
+
+create table if not exists public.gs_commentaires (
+  id           text primary key,
+  evenement_id text not null references public.gs_evenements (id) on delete cascade,
+  user_id      uuid not null default auth.uid(),
+  pseudo       text not null,
+  emoji        text not null default '💪',
+  texte        text not null,
+  cree_a       timestamptz not null default now(),
+  constraint gs_texte_non_vide check (length(trim(texte)) between 1 and 400)
+);
+
+create index if not exists gs_commentaires_evt_idx on public.gs_commentaires (evenement_id, cree_a);
+
+drop trigger if exists gs_evenements_touch on public.gs_evenements;
+create trigger gs_evenements_touch before insert or update on public.gs_evenements
+  for each row execute function public.gs_touch();
+
+-- Participer à un défi, sans dépendre de la règle de lecture des
+-- participations — qui ne montre que sa propre ligne.
+create or replace function public.gs_participe(p_defi text)
+returns boolean
+language sql security definer set search_path = public stable as $$
+  select exists (select 1 from public.gs_participations
+                 where defi_id = p_defi and user_id = auth.uid())
+$$;
+
+-- Même question, à partir d'un évènement du fil.
+create or replace function public.gs_participe_evt(p_evt text)
+returns boolean
+language sql security definer set search_path = public stable as $$
+  select exists (select 1 from public.gs_evenements e
+                 join public.gs_participations p
+                   on p.defi_id = e.defi_id and p.user_id = auth.uid()
+                 where e.id = p_evt)
+$$;
+
+alter table public.gs_evenements   enable row level security;
+alter table public.gs_reactions    enable row level security;
+alter table public.gs_commentaires enable row level security;
+
+-- Le fil se lit entre participants, et chacun n'écrit que pour soi.
+drop policy if exists gs_evenements_lecture on public.gs_evenements;
+create policy gs_evenements_lecture on public.gs_evenements
+  for select to authenticated using (public.gs_participe(defi_id));
+
+drop policy if exists gs_evenements_ecriture on public.gs_evenements;
+create policy gs_evenements_ecriture on public.gs_evenements
+  for insert to authenticated
+  with check (user_id = auth.uid() and public.gs_participe(defi_id));
+
+drop policy if exists gs_evenements_maj on public.gs_evenements;
+create policy gs_evenements_maj on public.gs_evenements
+  for update to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists gs_evenements_suppression on public.gs_evenements;
+create policy gs_evenements_suppression on public.gs_evenements
+  for delete to authenticated using (user_id = auth.uid());
+
+drop policy if exists gs_reactions_lecture on public.gs_reactions;
+create policy gs_reactions_lecture on public.gs_reactions
+  for select to authenticated using (public.gs_participe_evt(evenement_id));
+
+drop policy if exists gs_reactions_ecriture on public.gs_reactions;
+create policy gs_reactions_ecriture on public.gs_reactions
+  for insert to authenticated
+  with check (user_id = auth.uid() and public.gs_participe_evt(evenement_id));
+
+-- On retire sa réaction, pas celle des autres.
+drop policy if exists gs_reactions_retrait on public.gs_reactions;
+create policy gs_reactions_retrait on public.gs_reactions
+  for delete to authenticated using (user_id = auth.uid());
+
+drop policy if exists gs_commentaires_lecture on public.gs_commentaires;
+create policy gs_commentaires_lecture on public.gs_commentaires
+  for select to authenticated using (public.gs_participe_evt(evenement_id));
+
+drop policy if exists gs_commentaires_ecriture on public.gs_commentaires;
+create policy gs_commentaires_ecriture on public.gs_commentaires
+  for insert to authenticated
+  with check (user_id = auth.uid() and public.gs_participe_evt(evenement_id));
+
+-- Effacer sa vanne quand elle est passée trop loin ; celles des autres
+-- restent, y compris pour le créateur du défi.
+drop policy if exists gs_commentaires_suppression on public.gs_commentaires;
+create policy gs_commentaires_suppression on public.gs_commentaires
+  for delete to authenticated using (user_id = auth.uid());
+
+revoke all on function public.gs_participe(text) from public;
+revoke all on function public.gs_participe_evt(text) from public;
+grant execute on function public.gs_participe(text) to authenticated;
+grant execute on function public.gs_participe_evt(text) to authenticated;
+
+-- ------------------------------------------------------------
 -- Temps réel : une pesée d'un adversaire fait bouger le classement tout seul.
 -- ------------------------------------------------------------
 do $$
@@ -331,5 +461,26 @@ begin
 exception when duplicate_object then null;
 end $$;
 
+do $$
+begin
+  alter publication supabase_realtime add table public.gs_evenements;
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.gs_reactions;
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.gs_commentaires;
+exception when duplicate_object then null;
+end $$;
+
 alter table public.gs_participations replica identity full;
+alter table public.gs_evenements replica identity full;
+alter table public.gs_reactions replica identity full;
+alter table public.gs_commentaires replica identity full;
 alter table public.gs_entrees replica identity full;

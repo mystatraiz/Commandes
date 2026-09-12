@@ -123,11 +123,16 @@ export function calculerProgres(pesees, defi, maintenant = Date.now()) {
   const actuel = dedans.length ? dedans[dedans.length - 1] : depart;
 
   const kg = arrondi1(depart.kg - actuel.kg);
+  // Variation depuis la pesée précédente : c'est elle qu'on annonce dans le
+  // fil, parce que « −0,8 kg depuis hier » se commente, pas « 3,6 % au total ».
+  const precedente = dedans.length > 1 ? dedans[dedans.length - 2] : null;
   return {
     depart: depart.kg,
     actuel: actuel.kg,
     kg,
     pct: arrondi1(((depart.kg - actuel.kg) / depart.kg) * 100),
+    deltaKg: precedente ? arrondi1(actuel.kg - precedente.kg) : null,
+    deltaPct: precedente ? arrondi1(((actuel.kg - precedente.kg) / depart.kg) * 100) : null,
     pesees: dedans.length,
     derniereA: actuel.jour,
     departEstime: avant.length === 0,
@@ -153,6 +158,22 @@ export function aPublier(progres, defi, visibilite) {
     valeur,
     pct: visibilite === 'pourcentage' || visibilite === 'kilos' ? progres?.pct ?? null : null,
     kg: visibilite === 'kilos' ? progres?.kg ?? null : null,
+  };
+}
+
+/**
+ * La pesée telle qu'elle part dans le fil : progression et variation, filtrées
+ * par la visibilité. Ici encore, le poids n'a aucune place.
+ */
+export function evenementAPublier(progres, visibilite) {
+  if (!progres) return null;
+  const montrePct = visibilite === 'pourcentage' || visibilite === 'kilos';
+  return {
+    jour: progres.derniereA,
+    pct: montrePct ? progres.pct : null,
+    kg: visibilite === 'kilos' ? progres.kg : null,
+    deltaPct: montrePct ? progres.deltaPct : null,
+    deltaKg: visibilite === 'kilos' ? progres.deltaKg : null,
   };
 }
 
