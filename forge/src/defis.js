@@ -20,8 +20,10 @@ function echec(error) {
   if (/défi clos/i.test(m)) return { ok: false, message: 'Ce défi est clos.' };
   if (/défi terminé/i.test(m)) return { ok: false, message: 'Ce défi est déjà terminé.' };
   if (/non membre/i.test(m)) return { ok: false, message: 'Tu ne participes pas à ce défi.' };
-  if (/gs_defis|gs_participations|does not exist|schema cache/i.test(m)) {
-    return { ok: false, message: 'La base n’est pas à jour : lance supabase/schema.sql dans le SQL Editor.' };
+  // Une table ou une fonction manquante veut dire une seule chose : le schéma
+  // n'a pas été rejoué après une mise à jour.
+  if (/gs_\w+|does not exist|schema cache|could not find/i.test(m)) {
+    return { ok: false, message: 'La base n’est pas à jour : recolle supabase/schema.sql dans le SQL Editor de Supabase.' };
   }
   return { ok: false, message: m };
 }

@@ -54,6 +54,9 @@ export default function Arene({
   const moi = classement.find((p) => p.moi) || null;
   const ecart = moi ? ecartAuDessus(classement, moi.userId) : null;
   const premier = classement.find((p) => p.rang === 1) || null;
+  // Qui ne publie que son rang n'a pas de courbe : autant le dire, sinon on
+  // cherche pourquoi il manque quelqu'un sur le graphique.
+  const discrets = classement.filter((p) => p.visibilite === 'rang' && !p.moi);
   const visibilite = defi.participation?.visibilite || VISIBILITE_DEFAUT;
 
   const copier = async () => {
@@ -85,6 +88,15 @@ export default function Arene({
           </div>
           <CourbesDefi evenements={evenements} classement={classement} mesure={mesure} />
         </section>
+
+        {discrets.length > 0 && (
+          <div className="rappel">
+            <b>{discrets.map((p) => p.pseudo).join(', ')} ne montre{discrets.length > 1 ? 'nt' : ''} que son rang.</b>{' '}
+            C’est tout ce qui sort de son téléphone : ni courbe, ni chiffre. Chacun règle ça de son
+            côté, dans les réglages du défi — et le poids réel ne quitte jamais l’appareil, quel que
+            soit le réglage.
+          </div>
+        )}
 
         {statut === 'termine' && premier && (
           <section className="carte hero feu">
