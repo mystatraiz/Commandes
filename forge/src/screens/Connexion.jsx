@@ -22,7 +22,7 @@ export default function Connexion({ onConnecte }) {
     <div className="connexion">
       <form className="connexion-carte" onSubmit={valider}>
         <img src="/icon.svg" alt="" className="logo" />
-        <h1>Forge</h1>
+        <h1>Gros Sac</h1>
         <p>Entre ton code d’accès pour retrouver tes données. Il n’est demandé qu’une fois sur cet appareil.</p>
         <input
           className="champ" type="password" inputMode="text" autoComplete="current-password"

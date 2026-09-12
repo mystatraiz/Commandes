@@ -1,127 +1,106 @@
-# Forge — jeûne, poids & sport
+# Gros Sac — la course au poids perdu
 
-Suivi personnel du jeûne intermittent, du poids et du sport : sessions de
-padel avec les calories de la montre, circuits de renforcement adaptés au
-temps disponible, échauffement padel guidé de 10 minutes, courbes jour par jour
-superposables, et une couche de jeu (XP, niveaux, série, missions, badges)
-pour donner envie de revenir tous les jours.
+Le carnet est devenu une arène. On note toujours son poids, ses jeûnes et ses
+sessions, mais **quelqu'un regarde** : c'est le seul ressort d'assiduité qui
+tienne dans la durée. Un défi, une période, un code à balancer dans le groupe,
+et le classement fait le reste.
 
-Application React installable sur le téléphone, **utilisable sans réseau**,
-synchronisée sur Supabase quand le serveur est configuré — dans le même projet
-que l'application du grill, sans rien recréer.
+Application React installable sur téléphone, **utilisable sans réseau**,
+adossée à Supabase pour les comptes et les défis.
 
-## Les écrans
+## Les défis
 
-**Accueil** — la journée d'un coup d'œil : la série de jours actifs (🔥), le
-niveau et l'XP, le mot du jour, le jeûne en cours avec son chrono et sa phase,
-les trois missions du jour, l'objectif de sessions de la semaine, et les
-raccourcis vers la balance, le padel, la renfo et l'échauffement.
+Un défi porte un **nom**, une **période datée**, une **mesure** et un **code
+d'invitation de six lettres**. On le crée, on envoie le code, les autres
+entrent le code, choisissent leur pseudo et se pèsent. Trois âges, trois
+écrans : la salle d'attente, l'arène, le palmarès.
 
-**Jeûne** — choix de l'objectif (14:10, 16:8, 18:6, 20:4, OMAD), lancement,
-anneau de progression, chrono, et ce qui se passe dans le corps heure par heure
-(digestion, glycémie, glycogène, brûlage des graisses, cétose, autophagie).
-L'heure de début se corrige après coup si on a oublié de lancer. L'historique
-garde chaque jeûne avec sa durée et son objectif atteint ou non.
+**La mesure est le pourcentage du poids de départ**, réglable en kilos par
+celui qui crée. Sans ça, celui qui part à 110 kg écrase mécaniquement celui qui
+part à 75, et le défi meurt au bout d'une semaine faute d'enjeu.
 
-**Poids** — saisie au dixième de kilo avec deux gros boutons ±, date
-modifiable, liste des pesées avec l'écart à la précédente, objectif et chemin
-restant.
+Le **poids de départ** est la dernière pesée d'avant le début du défi. Faute
+de pesée antérieure — on rejoint sans s'être pesé — c'est la première pesée de
+la période qui fait foi, et le départ est signalé comme estimé : inventer un
+poids d'avant fausserait le classement de tout le monde.
 
-**Sport** — la liste des sessions par jour, avec calories, durée, intensité,
-résultat. Quatre entrées :
+Les **ex æquo partagent leur rang** et le suivant saute (1, 2, 2, 4). Qui ne
+s'est pas encore pesé ferme la marche **sans rang** plutôt que d'être compté
+dernier : il n'a pas encore joué.
 
-- **Padel** : début, durée (60 / 90 / 120 min ou libre), **calories affichées
-  par la montre**, intensité de 1 à 5, victoire / défaite / entraînement, note.
-- **Renfo** : six circuits (Full Body Blitz, Padel Power, Core Steel, HIIT
-  Inferno, Haut du corps Titan, Jambes de fer). On indique le temps dont on
-  dispose — de 5 à 60 minutes — et **le plan s'adapte** : nombre de tours,
-  nombre d'exercices conservés, rythme travail / repos. Le lecteur enchaîne
-  ensuite les étapes avec un gros compte à rebours, la consigne de chaque
-  exercice, des bips aux changements, pause et passage d'étape, et empêche
-  l'écran de s'éteindre. À la fin, on saisit les calories de la montre (ou on
-  garde l'estimation).
-- **Échauffement padel** : dix minutes en dix étapes, du trottinement aux
-  sprints de réaction, jouées par le même lecteur.
-- **Autre** : course, vélo, ce qu'on veut.
+Le **gage** est une phrase libre — « le dernier paie la tournée » — affichée en
+grand sur le palmarès. L'application enregistre une phrase, **jamais de
+l'argent** : aucun encaissement, aucune cagnotte, rien à déclarer.
 
-**Courbes** — poids, activité (kcal) et heures de jeûne, jour par jour, sur
-7, 14, 30 ou 90 jours. Trois lectures : **Panneaux** (un graphique par
-grandeur, axes alignés, curseur partagé), **Superposées** (chaque courbe
-ramenée sur sa propre plage, 0 % = son minimum, 100 % = son maximum, pour voir
-si le poids décroche quand l'activité et le jeûne montent), **Tableau**. Le
-poids porte en plus sa moyenne glissante sur 7 jours. Chaque série s'active ou
-se masque d'un appui ; la bulle affiche toujours les vraies valeurs.
+### Ce que les autres voient de toi
 
-**Profil** — niveau, série, badges (29, avec leur progression), réglages
-(prénom, objectif de poids, jeûne par défaut, sessions par semaine, poids de
-référence pour estimer les calories), export JSON, déconnexion.
+Chacun règle sa visibilité, défi par défi : **son rang seul**, **son
+pourcentage**, ou **ses kilos perdus**.
 
-## La couche de jeu
+**Ton poids absolu ne sort jamais**, quel que soit le réglage. Ce qui circule
+est une progression. Et ce n'est pas une politesse d'affichage : les pesées
+restent dans une table que seul ton compte peut lire, la table des
+participations n'est lisible que par son propriétaire, et le classement ne
+s'obtient que par la fonction `gs_classement()`, qui masque ce que chacun a
+choisi de taire. Interroger la base directement ne donne rien de plus que
+l'écran. C'est vérifié sur un vrai PostgreSQL par `test/schema.test.sh`.
 
-Tout est **recalculé à partir des entrées**, rien n'est stocké : deux appareils
-ne peuvent donc jamais afficher des scores différents.
+Une limite à connaître : c'est ton téléphone qui calcule la progression et la
+publie. Quelqu'un de déterminé pourrait donc publier un faux chiffre. Entre
+potes, c'est un problème social, pas technique — et c'est le prix pour que
+personne n'hésite à rejoindre.
 
-- **XP** — pesée +10 ; jeûne terminé +5 par heure, +50 si l'objectif est
-  atteint ; padel +60, renfo +40 (+1 par minute), autre +30, échauffement +15 ;
-  plus les calories divisées par 10. Chaque mission accomplie +20, les trois
-  dans la journée +50 (« journée parfaite »).
-- **Niveaux** — Recrue, Rookie, Combattant, Guerrier, Vétéran, Élite,
-  Champion, Légende, Titan, Immortel. Le seuil du niveau n est 150 × n × (n − 1).
-- **Série** — jours consécutifs « actifs » : une pesée, une session, ou au
-  moins 12 h de jeûne rattachées à la journée. La flamme clignote quand la
-  série du jour n'est pas encore assurée.
-- **Missions du jour** — toujours « Monte sur la balance » et « Jeûne N h »,
-  plus une mission tournante (session, 15 min de renfo, 300 kcal,
-  échauffement, 30 min d'activité).
-- **Badges** — jeûnes (12 h, 16 h, 20 h, 24 h, 10 et 50 jeûnes), séries (3, 7,
-  14, 30, 100 jours), padel (1, 10, 25, 50), renfo (1, 10, 25), échauffements,
-  calories cumulées, pesées, kilos perdus, journées parfaites.
+## Le reste, inchangé
 
-Les barèmes sont dans `src/lib/gamification.js`, les circuits et exercices
-dans `src/lib/circuits.js`, l'échauffement dans `src/lib/echauffement.js`.
+**Jeûne** — objectifs 14:10 à OMAD, anneau, chrono, phases du corps heure par
+heure, correction de l'heure de début, et **correction d'un jeûne déjà
+terminé** : début et fin repris, raccourcis pour reculer la fin, durée
+recalculée sous les yeux. Un jeûne qu'on oublie d'arrêter ne pollue plus les
+courbes.
+
+**Poids** — saisie au dixième, écarts, objectif, chemin restant.
+
+**Sport** — padel avec les calories de la montre, autres sports, et six
+**circuits de renfo adaptés au temps disponible** (5 à 60 min) : le nombre de
+tours, les exercices conservés et le rythme travail/repos se recalculent selon
+les minutes annoncées. Un lecteur guidé enchaîne les étapes avec compte à
+rebours, consignes et bips, écran maintenu allumé.
+
+**Échauffement padel** — dix minutes en dix étapes, joué par le même lecteur.
+
+**Courbes** — poids, activité et heures de jeûne, sur 7 à 90 jours. Panneaux
+alignés à curseur partagé, superposition indexée (chaque courbe ramenée sur sa
+propre plage, pour voir si le poids décroche quand l'activité monte, sans le
+piège du double axe), ou tableau.
+
+**Progression** — XP, niveaux, série de jours, missions quotidiennes, badges.
+Tout est recalculé depuis les entrées, donc deux appareils ne peuvent pas
+afficher des scores différents.
 
 ## Où sont les données
 
-Chaque appareil écrit d'abord dans **IndexedDB** (secours `localStorage`). Tout
-fonctionne sans réseau. Quand Supabase est configuré, chaque entrée est
-poussée dès que possible et les autres appareils la reçoivent en temps réel ;
-en cas de conflit, la dernière écriture gagne, arbitrée sur un horodatage posé
-par la base. Les suppressions sont logiques (`supprime`), pour qu'elles se
-propagent aussi.
+Chaque appareil écrit d'abord dans **IndexedDB** (secours `localStorage`), et
+tout fonctionne sans réseau. Supabase s'ajoute par-dessus : les entrées
+personnelles montent dès que possible, les participations circulent en temps
+réel. En cas de conflit, la dernière écriture gagne, arbitrée sur un
+horodatage posé par la base et non par le téléphone.
 
-### Installer dans le projet Supabase du grill
+### Installation
 
-L'application n'a besoin que d'une table, préfixée `forge_`, qui cohabite avec
-`grill_commandes`. **Chaque ligne n'est visible que par le compte qui l'a
-créée** : le compte du restaurant ne voit rien ici, et réciproquement — c'est
-ce que vérifie `test/schema.test.sh` sur un vrai PostgreSQL.
+Une seule passe de SQL, préfixée `gs_`, qui cohabite avec le projet du grill.
 
-1. Ouvrir le projet Supabase existant, **SQL Editor**, coller
-   `supabase/schema.sql`, lancer.
-2. **Authentication → Users → Add user** : créer votre compte, par exemple
-   `moi@forge.local`, avec comme mot de passe le **code d'accès** que
-   l'application demandera. Cocher la confirmation automatique de l'adresse.
-3. Dans Vercel, importer ce dépôt en **nouveau projet** avec `forge` comme
-   **Root Directory** (Settings → General), puis ajouter les variables :
+1. Supabase → **SQL Editor** → coller `supabase/schema.sql` → Run. Le script
+   est rejouable, et reprend une installation « Forge » antérieure s'il y en a
+   une.
+2. **Authentication → Providers** : activer Email. Chaque participant crée son
+   compte depuis l'application.
+3. Dans Vercel, ajouter `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`
+   (Project Settings → API dans Supabase), avec le préfixe `VITE_`, qui est
+   voulu : l'application est un site statique, la clé `anon` est publique par
+   conception et n'autorise rien par elle-même. Ce sont les règles d'accès en
+   base qui protègent les données.
 
-   | Variable | Valeur |
-   |---|---|
-   | `VITE_SUPABASE_URL` | l'URL du projet Supabase (la même que pour le grill) |
-   | `VITE_SUPABASE_ANON_KEY` | la clé publique `anon` (la même aussi) |
-   | `VITE_SUPABASE_COMPTE` | l'adresse du compte créé à l'étape 2, si différente de `moi@forge.local` |
-
-4. Déployer. Au premier lancement, l'application demande le code, puis
-   mémorise la session.
-
-Sans ces variables, tout reste sur l'appareil : c'est aussi le mode des tests
-et du développement local.
-
-## Installation sur le téléphone
-
-Ouvrir l'adresse du site, puis **Android / Chrome** : menu ⋮ → « Installer
-l'application » ; **iPhone / Safari** : Partager → « Sur l'écran d'accueil ».
-L'application s'ouvre en plein écran, fonctionne hors connexion, et propose de
-recharger quand une nouvelle version est en ligne.
+Sans ces variables, tout reste sur l'appareil, sans comptes ni défis.
 
 ## Développement
 
@@ -130,64 +109,61 @@ cd forge
 npm install
 npm run dev       # développement
 npm run build     # production dans dist/
-npm run icons     # régénère les PNG de l'icône depuis public/icon.svg
-npm test          # tout : unitaires, navigateur, schéma
+npm run icons     # régénère les PNG depuis public/icon.svg
+npm test          # unitaires, navigateur, schéma
 ```
 
 `npm test` enchaîne :
 
 - `test/*.test.mjs` — les fonctions pures : arbitrage de synchronisation,
-  séries jour par jour et heures de jeûne réparties sur les journées, XP /
-  niveaux / série / missions / badges, adaptation des circuits au temps (le
-  plan tient toujours dans le budget, plus de temps donne plus de travail),
-  échauffement de dix minutes pile ;
-- `test/app.test.cjs` — le parcours complet dans un navigateur mobile simulé
-  (Playwright) : jeûne lancé, corrigé et terminé, pesée, session de padel,
-  circuit adapté et joué dans le lecteur, échauffement, courbes dans les trois
-  modes, gamification, persistance, bouton retour ;
-- `test/schema.test.sh` — le schéma sur un vrai PostgreSQL et l'isolation
-  entre comptes (ignoré si PostgreSQL est absent).
+  séries jour par jour, XP et badges, adaptation des circuits au temps, et
+  **les défis** (périodes, choix du poids de départ, classement avec ex æquo,
+  et le fait que le poids absolu ne figure dans rien de ce qui est publié) ;
+- `test/app.test.cjs` — le parcours complet dans un navigateur mobile simulé ;
+- `test/schema.test.sh` — le schéma sur un vrai PostgreSQL avec **quatre
+  comptes** : les pesées restent privées, un défi n'existe pas pour qui n'y
+  participe pas, « mon rang seul » est tenu par la base et non par l'écran, et
+  on ne contourne pas l'affichage en lisant la table.
 
 `SHOTS=1 npm test` écrit des captures dans `test/captures/`. Si Chromium est
 ailleurs : `CHROME_PATH=/chemin/vers/chrome npm test`.
 
 ## Organisation
 
+Le dossier s'appelle encore `forge/` : le renommer obligerait à reprendre le
+réglage **Root Directory** du projet Vercel, pour rien.
+
 ```
-index.html                coquille de la page
-vite.config.js            build + PWA (manifeste, service worker)
-public/                   icônes, polices (Barlow, licence OFL)
-supabase/schema.sql       à coller dans Supabase
-supabase/vider.sql        remise à zéro
+supabase/schema.sql       comptes, défis, classement, règles d'accès
 src/
-  supabase.js             connexion et code d'accès
+  supabase.js             connexion
   db.js                   IndexedDB (+ secours localStorage)
   sync.js                 synchronisation locale d'abord
   App.jsx                 navigation, données, actions
-  screens/
-    Accueil.jsx           la journée
-    Jeune.jsx             chrono, phases, historique
-    Poids.jsx             pesées
-    Sport.jsx             sessions
-    FormSession.jsx       saisie padel / autre
-    Renfo.jsx             circuits et temps disponible
-    Lecteur.jsx           déroulé guidé (circuits, échauffement)
-    Echauffement.jsx      programme padel 10 min
-    Courbes.jsx           panneaux, superposition, tableau
-    Profil.jsx            niveau, badges, réglages
-    Connexion.jsx         code d'accès
-  components/
-    Graphique.jsx         courbes SVG avec curseur et bulle
-    Anneau.jsx            anneau de progression
-    Nav.jsx, Feuille.jsx, Toast.jsx, MajPWA.jsx
+  screens/                Accueil, Jeune, Poids, Sport, FormSession, Renfo,
+                          Lecteur, Echauffement, Courbes, Profil, Connexion
+  components/             Graphique, Anneau, Nav, Feuille, Toast, MajPWA
   lib/
+    defis.js              périodes, progrès, classement — le cœur du jeu
     jeune.js              objectifs, phases, heures par journée
-    series.js             séries jour par jour, normalisation, bornes
+    series.js             séries jour par jour, normalisation
     gamification.js       XP, niveaux, série, missions, badges
-    circuits.js           exercices, circuits, adaptation au temps
+    circuits.js           exercices et adaptation au temps
     echauffement.js       les dix étapes
     fusion.js             arbitrage local / serveur
     temps.js              horloge, formats, clés de jour
     son.js                bips du lecteur
 test/                     tests (+ serveur statique, générateur d'icônes)
 ```
+
+## Ce qui reste à faire
+
+Le socle est posé — domaine des défis, schéma, règles d'accès — mais les écrans
+ne sont pas encore branchés dessus :
+
+1. **Comptes** : inscription et connexion par e-mail, choix du pseudo et de
+   l'emoji, en remplacement du code d'accès partagé.
+2. **Écrans des défis** : liste, création, rejoindre par code, arène avec
+   classement vivant et courbes superposées des participants.
+3. **Accueil** : mettre le classement en tête, le reste dessous.
+4. **Migration** : rattacher les entrées locales existantes au compte créé.

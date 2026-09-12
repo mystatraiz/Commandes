@@ -38,7 +38,7 @@ function useGeometrie() {
 
 function Anomalie({ etat }) {
   if (!etat?.actif || !etat.erreur) return null;
-  const tableAbsente = /forge_entrees|does not exist|schema cache/i.test(etat.erreur);
+  const tableAbsente = /gs_entrees|does not exist|schema cache/i.test(etat.erreur);
   return (
     <div className="anomalie" role="alert">
       <strong>La synchronisation ne fonctionne pas.</strong>

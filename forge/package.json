@@ -1,9 +1,9 @@
 {
-  "name": "forge",
+  "name": "gros-sac",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Forge — suivi du jeûne, du poids et du sport (padel, renfo), avec courbes et gamification.",
+  "description": "Gros Sac — la course au poids perdu entre potes : défis datés, classement, jeûne, padel et renfo.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

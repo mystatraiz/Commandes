@@ -8,7 +8,7 @@ import * as db from './db.js';
 import { supabase, syncActive, TABLE } from './supabase.js';
 import { arbitrer, versLocal, versServeur } from './lib/fusion.js';
 
-const CLE_DERNIERE_SYNC = 'forge.derniereSync';
+const CLE_DERNIERE_SYNC = 'grossac.derniereSync';
 const REPRISE_MAX = 5000;
 const RETENTE_MS = Number(import.meta.env.VITE_SYNC_MS) || 20000;
 
@@ -118,7 +118,7 @@ export async function demarrer() {
 
   if (!canal) {
     canal = supabase
-      .channel('forge-entrees')
+      .channel('gs-entrees')
       .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, async (message) => {
         if (message.eventType === 'DELETE') {
           if (message.old?.id) { await db.supprimerPhysiquement(message.old.id); prevenir(); }
