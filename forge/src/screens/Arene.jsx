@@ -5,11 +5,19 @@ import CourbesDefi from '../components/CourbesDefi.jsx';
 import Fil from '../components/Fil.jsx';
 import {
   statutDefi, STATUTS, joursRestants, joursTotal, progressionTemps,
-  mesureById, formatValeur, ecartAuDessus, VISIBILITES,
+  mesureById, formatValeur, ecartAuDessus, VISIBILITES, VISIBILITE_DEFAUT,
 } from '../lib/defis.js';
 import { formatDateCourte, formatJourMois } from '../lib/temps.js';
 
 const MEDAILLES = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+/* L'autre unité que celle qui classe : le pourcentage met les gabarits à
+   égalité, mais ce sont les kilos qui parlent. On montre les deux. */
+function secondaire(p, mesure) {
+  const v = mesure === 'kilos' ? p.pct : p.kg;
+  if (v === null || v === undefined) return '';
+  return `${v.toLocaleString('fr-FR')} ${mesure === 'kilos' ? '%' : 'kg'}`;
+}
 
 function Ligne({ p, mesure }) {
   const chiffre = p.visibilite === 'rang' && !p.moi ? null : p.valeur;
@@ -24,9 +32,7 @@ function Ligne({ p, mesure }) {
             ? 'pas encore pesé'
             : p.visibilite === 'rang' && !p.moi
               ? 'ne montre que son rang'
-              : p.kg !== null && p.kg !== undefined && mesure !== 'kilos'
-                ? `${p.kg.toLocaleString('fr-FR')} kg`
-                : ''}
+              : secondaire(p, mesure)}
         </div>
       </div>
       <div className="v tabular">{chiffre === null || chiffre === undefined ? '—' : formatValeur(chiffre, mesure)}</div>
@@ -48,7 +54,7 @@ export default function Arene({
   const moi = classement.find((p) => p.moi) || null;
   const ecart = moi ? ecartAuDessus(classement, moi.userId) : null;
   const premier = classement.find((p) => p.rang === 1) || null;
-  const visibilite = defi.participation?.visibilite || 'pourcentage';
+  const visibilite = defi.participation?.visibilite || VISIBILITE_DEFAUT;
 
   const copier = async () => {
     try {
@@ -175,7 +181,7 @@ export default function Arene({
             <span className="aide">appuie sur une phrase pour l’envoyer</span>
           </div>
           <Fil
-            evenements={evenements} mesure={mesure} maintenant={maintenant}
+            evenements={evenements} maintenant={maintenant}
             onReagir={onReagir} onCommenter={onCommenter} onSupprimerCommentaire={onSupprimerCommentaire}
           />
         </section>

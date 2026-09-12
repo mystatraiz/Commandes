@@ -4,7 +4,7 @@ import { cleJour, debutJour, jourPlus } from '../src/lib/temps.js';
 import {
   statutDefi, joursTotal, joursRestants, progressionTemps, finPour,
   calculerProgres, valeurClassement, aPublier, evenementAPublier, classer, ecartAuDessus, palmares,
-  genererCode, normaliserCode, codeValide, LONGUEUR_CODE,
+  genererCode, normaliserCode, codeValide, LONGUEUR_CODE, VISIBILITES, VISIBILITE_DEFAUT,
 } from '../src/lib/defis.js';
 
 const J = cleJour();
@@ -221,4 +221,11 @@ test('la pesée publiée dans le fil suit la visibilité', () => {
       `le poids ne figure pas dans la pesée publiée en ${v}`);
   }
   assert.equal(evenementAPublier(null, 'kilos'), null);
+});
+
+test('le réglage par défaut montre tout, et reste modifiable', () => {
+  assert.equal(VISIBILITE_DEFAUT, 'kilos', 'entre potes, cacher ses chiffres enlève le sel');
+  assert.equal(VISIBILITES[0].id, VISIBILITE_DEFAUT, 'le défaut est proposé en premier');
+  assert.deepEqual(VISIBILITES.map((v) => v.id).sort(), ['kilos', 'pourcentage', 'rang'],
+    'les trois réglages restent offerts : le défaut n’enlève rien');
 });

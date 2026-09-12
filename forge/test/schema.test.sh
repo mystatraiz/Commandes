@@ -133,8 +133,10 @@ verifier "un code inconnu ne révèle rien" \
 verifier "l'aperçu par le code montre l'essentiel avant de s'engager" \
 "begin; $BOB select nom='La Chasse au Gras' and participants=1 from public.gs_apercu('abc234'); commit;"
 
-$PSQL -c "begin; $BOB   select public.gs_rejoindre('abc234','Bob','🐻','pourcentage'); commit;" >/dev/null 2>&1
+$PSQL -c "begin; $BOB   select public.gs_rejoindre('abc234','Bob','🐻'); commit;" >/dev/null 2>&1
 $PSQL -c "begin; $CARLA select public.gs_rejoindre('ABC234','Carla','🦊','rang'); commit;" >/dev/null 2>&1
+verifier "sans réglage précisé, on rejoint en montrant tout" \
+"begin; $BOB select visibilite='kilos' from public.gs_participations where defi_id='d1'; commit;"
 verifier "deux invités ont rejoint (le code tolère la casse)" \
 "begin; $ALICE select count(*)=3 from public.gs_classement('d1'); commit;"
 refuse "un code inconnu est refusé" \

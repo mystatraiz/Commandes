@@ -95,7 +95,7 @@ create table if not exists public.gs_participations (
   user_id     uuid not null default auth.uid(),
   pseudo      text not null,
   emoji       text not null default '💪',
-  visibilite  text not null default 'pourcentage',
+  visibilite  text not null default 'kilos',
   valeur      numeric,
   pct         numeric,
   kg          numeric,
@@ -250,7 +250,7 @@ $$;
 -- Rejoindre par le code.
 -- ------------------------------------------------------------
 create or replace function public.gs_rejoindre(
-  p_code text, p_pseudo text, p_emoji text default '💪', p_visibilite text default 'pourcentage')
+  p_code text, p_pseudo text, p_emoji text default '💪', p_visibilite text default 'kilos')
 returns text
 language plpgsql security definer set search_path = public as $$
 declare

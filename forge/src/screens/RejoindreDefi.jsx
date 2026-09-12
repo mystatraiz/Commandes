@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { VISIBILITES, codeValide, normaliserCode, LONGUEUR_CODE, mesureById, joursTotal } from '../lib/defis.js';
+import { VISIBILITES, VISIBILITE_DEFAUT, codeValide, normaliserCode, LONGUEUR_CODE, mesureById, joursTotal } from '../lib/defis.js';
 import { formatDateCourte } from '../lib/temps.js';
 import { EMOJIS } from './Connexion.jsx';
 
@@ -9,7 +9,7 @@ export default function RejoindreDefi({ profil, onApercu, onRejoindre, onRetour 
   const [defi, setDefi] = useState(null);
   const [pseudo, setPseudo] = useState(profil?.pseudo || '');
   const [emoji, setEmoji] = useState(profil?.emoji || '💪');
-  const [visibilite, setVisibilite] = useState('pourcentage');
+  const [visibilite, setVisibilite] = useState(VISIBILITE_DEFAUT);
   const [erreur, setErreur] = useState(null);
   const [enCours, setEnCours] = useState(false);
 

@@ -26,7 +26,11 @@ function DefiEnTete({ defi, lignes, maintenant, onOuvrir }) {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div className="chiffre md">{formatValeur(moi?.valeur, defi.mesure)}</div>
-          <div className="aide">{mesureById(defi.mesure).nom}</div>
+          <div className="aide">
+            {(defi.mesure === 'kilos' ? moi?.pct : moi?.kg) !== null && (defi.mesure === 'kilos' ? moi?.pct : moi?.kg) !== undefined
+              ? `soit ${(defi.mesure === 'kilos' ? moi.pct : moi.kg).toLocaleString('fr-FR')} ${defi.mesure === 'kilos' ? '%' : 'kg'}`
+              : mesureById(defi.mesure).nom}
+          </div>
         </div>
       </div>
       <p className="aide" style={{ marginTop: 8 }}>
