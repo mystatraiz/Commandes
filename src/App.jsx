@@ -149,8 +149,11 @@ export default function App() {
   const choisirTable = useCallback((table) => {
     vibrer(12);
     setBrouillon((b) => ({ ...b, table }));
-    pousser('saisie');
-  }, [pousser]);
+    // Le pavé ouvert depuis la saisie sert à corriger le numéro : on y revient
+    // au lieu d'empiler un second écran de saisie par-dessus le premier.
+    if (pile.length >= 2 && pile[pile.length - 2] === 'saisie') window.history.back();
+    else pousser('saisie');
+  }, [pile, pousser]);
 
   const dicter = useCallback(() => {
     setBrouillon(BROUILLON_VIDE);
@@ -337,7 +340,11 @@ export default function App() {
       )}
 
       {ecran === 'table' && (
-        <ChoixTable onChoisir={choisirTable} onRetour={abandonner} occupees={occupees} />
+        <ChoixTable
+          onChoisir={choisirTable}
+          onRetour={brouillon.id || brouillon.lignes.length ? retour : abandonner}
+          occupees={occupees}
+        />
       )}
 
       {ecran === 'saisie' && (
@@ -347,7 +354,7 @@ export default function App() {
           onRetirer={retirer}
           onEnvoyer={envoyer}
           onRetour={retour}
-          onChangerTable={retour}
+          onChangerTable={() => pousser('table')}
         />
       )}
 

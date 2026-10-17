@@ -58,7 +58,10 @@ ou **Effacer**. Un appui bref ne déclenche rien, le doigt qui glisse annule, et
 le bouton « Servi » garde la main.
 
 **Modifier** rouvre la commande dans l'écran de saisie habituel, déjà rempli :
-on ajoute des pièces, on en retire, puis « Enregistrer ». La commande est mise
+on ajoute des pièces, on en retire, puis « Enregistrer ». Le **numéro de table
+en haut est un bouton** : un appui rouvre le pavé et la commande change de
+table sans rien ressaisir — revenir du pavé sans choisir garde la correction
+en cours. La commande est mise
 à jour sur place — aucune seconde commande n'est créée, et **le chronomètre
 poursuit sa course** : une correction à 20h35 ne doit pas faire croire que la
 table a été prise à 20h35. Revenir en arrière sans enregistrer laisse la

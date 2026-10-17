@@ -1043,3 +1043,33 @@ table.data td { text-align: right; font-weight: 700; color: var(--ink-soft); }
 }
 .histo-ligne i { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 auto; }
 .histo-item .btn { min-height: 42px; font-size: 14px; }
+
+/* Numéro de table cliquable dans l'en-tête de saisie */
+.titre-table {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  padding: 2px 0;
+  border-radius: var(--r-sm);
+}
+.titre-table .t {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -.35px;
+  white-space: nowrap;
+}
+.titre-table .t svg { color: var(--accent); flex: 0 0 auto; }
+.titre-table .sub {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.titre-table:active .t { color: var(--accent); }
+.titre-table:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }

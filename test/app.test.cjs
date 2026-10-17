@@ -58,7 +58,7 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   console.log('\n== Choix des grillades ==');
   await pg.locator('.touche', { hasText: /^22$/ }).click();
   await pg.waitForTimeout(300);
-  ok((await pg.locator('.topbar .title').textContent()).includes('Table 22'),
+  ok((await pg.locator('.topbar .titre-table').textContent()).includes('Table 22'),
     'un appui sur une table mène directement aux grillades');
   ok(await pg.locator('.meat').count() === 13, '13 grillades proposées');
   const nomsViandes = await pg.locator('.meat').allTextContents();
@@ -234,8 +234,8 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   await appuiLong(cadreMod);
   await pg.getByRole('button', { name: /Modifier la commande/ }).click();
   await pg.waitForTimeout(400);
-  ok((await pg.locator('.topbar .title').textContent()).includes(`Table ${tableMod}`), 'la table est reprise');
-  ok((await pg.locator('.topbar .sub').textContent()).includes('Correction'), 'l’écran annonce une correction');
+  ok((await pg.locator('.topbar .titre-table').textContent()).includes(`Table ${tableMod}`), 'la table est reprise');
+  ok((await pg.locator('.titre-table .sub').textContent()).includes('Correction'), 'l’écran annonce une correction');
   ok(await pg.locator('.chip').count() === lignesAvant, 'les pièces déjà commandées sont reprises');
   ok((await pg.locator('.footer-bar .btn').textContent()).includes('Enregistrer'),
     'le bouton enregistre au lieu d’envoyer');
@@ -268,6 +268,50 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   await pg.waitForTimeout(500);
   ok(await pg.locator('.order', { hasText: `Table ${tableMod}` }).first().locator('.order-line').count() === lignesAvant,
     'la pièce retirée disparaît de la commande');
+
+  console.log('\n== Changer la table d’une commande existante ==');
+  await appuiLong(await pg.locator('.order', { hasText: `Table ${tableMod}` }).first().boundingBox());
+  await pg.getByRole('button', { name: /Modifier la commande/ }).click();
+  await pg.waitForTimeout(400);
+  const lignesCorrigees = await pg.locator('.chip').count();
+
+  await pg.locator('.titre-table').click();           // le numéro ouvre le pavé
+  await pg.waitForTimeout(400);
+  ok(await pg.locator('.pave').count() === 3, 'le pavé s’ouvre depuis la correction');
+
+  // En revenir sans choisir ne doit pas abandonner la correction.
+  await pg.locator('.topbar .btn-quiet').click();
+  await pg.waitForTimeout(400);
+  ok(await pg.locator('.chip').count() === lignesCorrigees, 'revenir du pavé garde la correction');
+
+  await pg.locator('.titre-table').click();
+  await pg.waitForTimeout(400);
+  await pg.locator('.touche', { hasText: /^14$/ }).click();
+  await pg.waitForTimeout(400);
+  ok((await pg.locator('.topbar .titre-table').textContent()).includes('Table 14'), 'la table est changée');
+  ok(await pg.locator('.chip').count() === lignesCorrigees, 'les pièces sont conservées');
+  ok((await pg.locator('.footer-bar .btn').textContent()).includes('Enregistrer'),
+    'on est toujours en correction, pas en nouvelle commande');
+
+  const nbAvantDeplacement = await pg.evaluate(() => 1);   // repère de lisibilité
+  await pg.locator('.footer-bar .btn').click();
+  await pg.waitForTimeout(500);
+  ok(nbAvantDeplacement === 1 && await pg.locator('.order', { hasText: `Table ${tableMod}` }).count() === 0,
+    'la commande a quitté son ancienne table');
+  const deplacee = pg.locator('.order', { hasText: 'Table 14' }).first();
+  ok(await deplacee.count() === 1, 'elle se retrouve sur la table 14');
+  ok(await deplacee.locator('.order-line').count() === lignesAvant, 'avec les mêmes pièces');
+
+  // On la remet où elle était, pour la suite du parcours.
+  await appuiLong(await deplacee.boundingBox());
+  await pg.getByRole('button', { name: /Modifier la commande/ }).click();
+  await pg.waitForTimeout(400);
+  await pg.locator('.titre-table').click();
+  await pg.waitForTimeout(400);
+  await pg.locator('.touche', { hasText: new RegExp(`^${tableMod}$`) }).click();
+  await pg.waitForTimeout(400);
+  await pg.locator('.footer-bar .btn').click();
+  await pg.waitForTimeout(500);
 
   // Abandonner une correction laisse la commande intacte.
   await appuiLong(await pg.locator('.order', { hasText: `Table ${tableMod}` }).first().boundingBox());
