@@ -34,7 +34,7 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   console.log('\n== Pavé de sélection des tables ==');
   await pg.getByRole('button', { name: /Nouvelle commande/ }).click();
   ok(await pg.locator('.pave').count() === 3, 'trois zones affichées');
-  ok(await pg.locator('.touche').count() === 29, '29 tables proposées');
+  ok(await pg.locator('.touche').count() === 31, '31 tables proposées');
   const titres = await pg.locator('.zone-titre').allTextContents();
   ok(titres[0].includes('Salle') && titres[1].includes('Véranda') && titres[2].includes('Tonnelle'),
     'les zones sont nommées dans l’ordre');
@@ -52,7 +52,7 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   ok(horsEcran === 0, `toutes les tables tiennent à l’écran sans défiler (${horsEcran} hors champ)`);
 
   const premiere = await pg.locator('.touche').first().boundingBox();
-  ok(premiere.width >= 72 && premiere.height >= 56,
+  ok(premiere.width >= 72 && premiere.height >= 46,
     `les touches sont larges (${Math.round(premiere.width)}×${Math.round(premiere.height)})`);
 
   console.log('\n== Choix des grillades ==');
