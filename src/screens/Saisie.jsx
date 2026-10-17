@@ -57,6 +57,7 @@ function PanneauCuissons({ grillade, onChoisir, onFermer }) {
 
 export default function Saisie({ brouillon, onAjouter, onRetirer, onEnvoyer, onChangerTable }) {
   const [enAttente, setEnAttente] = useState(null);   // grillade dont on choisit la cuisson
+  const correction = Boolean(brouillon.id);           // commande déjà envoyée, en cours de retouche
 
   const pieces = brouillon.lignes.reduce((s, l) => s + l.qte, 0);
 
@@ -91,7 +92,11 @@ export default function Saisie({ brouillon, onAjouter, onRetirer, onEnvoyer, onC
         <h1 className="title">
           Table {brouillon.table}
           <span className="sub">
-            {pieces ? `${pieces} pièce${pieces > 1 ? 's' : ''} · appuyez pour ajouter` : 'Étape 2 sur 2 — les grillades'}
+            {correction
+              ? `Correction · ${pieces} pièce${pieces > 1 ? 's' : ''}`
+              : pieces
+                ? `${pieces} pièce${pieces > 1 ? 's' : ''} · appuyez pour ajouter`
+                : 'Étape 2 sur 2 — les grillades'}
           </span>
         </h1>
       </header>
@@ -156,7 +161,7 @@ export default function Saisie({ brouillon, onAjouter, onRetirer, onEnvoyer, onC
           disabled={pieces === 0}
           onClick={onEnvoyer}
         >
-          Envoyer la commande{pieces > 0 ? ` · ${pieces}` : ''}
+          {correction ? 'Enregistrer' : 'Envoyer la commande'}{pieces > 0 ? ` · ${pieces}` : ''}
         </button>
       </div>
 

@@ -53,9 +53,19 @@ précédentes, chronomètre lancé.
 
 Deux filets, pour les deux erreurs les plus probables en plein service.
 
-**Une commande saisie par erreur** s'efface par un **appui long** sur sa carte,
-suivi d'une confirmation qui rappelle la table et le nombre de pièces — un
-appui bref ne déclenche rien, et le bouton « Servi » garde la main.
+Un **appui long** sur une carte ouvre trois choix : **Modifier**, **Garder**
+ou **Effacer**. Un appui bref ne déclenche rien, le doigt qui glisse annule, et
+le bouton « Servi » garde la main.
+
+**Modifier** rouvre la commande dans l'écran de saisie habituel, déjà rempli :
+on ajoute des pièces, on en retire, puis « Enregistrer ». La commande est mise
+à jour sur place — aucune seconde commande n'est créée, et **le chronomètre
+poursuit sa course** : une correction à 20h35 ne doit pas faire croire que la
+table a été prise à 20h35. Revenir en arrière sans enregistrer laisse la
+commande intacte.
+
+**Effacer** demande confirmation, en rappelant la table et le nombre de
+pièces.
 
 **Une commande marquée servie par erreur** se récupère dans l'**historique du
 jour**, accessible par l'icône horloge en haut de l'accueil. On y retrouve

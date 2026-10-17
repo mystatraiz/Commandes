@@ -17,7 +17,7 @@ import MajPWA from './components/MajPWA.jsx';
 const nouvelId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 const vibrer = (ms) => { try { navigator.vibrate?.(ms); } catch {} };
 
-const BROUILLON_VIDE = { table: null, lignes: [] };
+const BROUILLON_VIDE = { id: null, table: null, lignes: [] };
 
 export default function App() {
   // Pile d'écrans, adossée à l'historique du navigateur pour que le bouton
@@ -161,6 +161,7 @@ export default function App() {
      habituel, où la commande se relit et se corrige avant d'être envoyée. */
   const reprendreDictee = useCallback((resultat) => {
     setBrouillon({
+      id: null,
       table: resultat.table,
       lignes: resultat.lignes.map(({ grillade, cuisson, qte, truffe }) =>
         truffe ? { grillade, cuisson, qte, truffe: true } : { grillade, cuisson, qte }),
@@ -209,23 +210,51 @@ export default function App() {
     });
   }, []);
 
+  /* Ouvre une commande déjà envoyée pour la corriger : on retombe sur l'écran
+     de saisie habituel, pré-rempli, en gardant son identifiant. */
+  const modifier = useCallback((cmd) => {
+    setBrouillon({ id: cmd.id, table: cmd.table, lignes: cmd.lignes });
+    pousser('saisie');
+  }, [pousser]);
+
   const envoyer = useCallback(async () => {
     if (!brouillon.table || !brouillon.lignes.length) return;
+    const { id: enCorrection, table, lignes } = brouillon;
+    setBrouillon(BROUILLON_VIDE);
+    db.ecrireBrouillon(null);
+
+    if (enCorrection) {
+      // La commande est relue avant d'être réécrite : elle a pu être servie
+      // depuis un autre téléphone pendant la correction, et l'enregistrement
+      // ne doit pas la remettre au grill. L'heure de prise est conservée,
+      // sinon le chronomètre repartirait de zéro à chaque retouche.
+      const toutes = await db.toutesLesCommandes();
+      const actuelle = toutes.find((c) => c.id === enCorrection);
+      if (!actuelle) {
+        allerAccueil();
+        montrerToast('Cette commande n’existe plus.');
+        return;
+      }
+      await enregistrer({ ...actuelle, table, lignes });
+      vibrer(20);
+      allerAccueil();
+      montrerToast(`Table ${table} modifiée`);
+      return;
+    }
+
     const cmd = {
       id: nouvelId(),
-      table: brouillon.table,
-      lignes: brouillon.lignes,
+      table,
+      lignes,
       creeeA: Date.now(),
       servieA: null,
       statut: 'en_cours',
     };
-    setBrouillon(BROUILLON_VIDE);
-    db.ecrireBrouillon(null);
     await enregistrer(cmd);
     vibrer(24);
     allerAccueil();
-    const n = cmd.lignes.reduce((s, l) => s + l.qte, 0);
-    montrerToast(`Table ${cmd.table} — ${n} pièce${n > 1 ? 's' : ''}`);
+    const n = lignes.reduce((s, l) => s + l.qte, 0);
+    montrerToast(`Table ${table} — ${n} pièce${n > 1 ? 's' : ''}`);
   }, [brouillon, allerAccueil, montrerToast, enregistrer]);
 
   const abandonner = useCallback(() => {
@@ -301,6 +330,7 @@ export default function App() {
           onDicter={dicteeDisponible ? dicter : null}
           onServir={servir}
           onEffacer={effacer}
+          onModifier={modifier}
           onStats={() => pousser('stats')}
           onHistorique={() => pousser('historique')}
         />

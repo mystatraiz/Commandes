@@ -10,7 +10,7 @@ function classeAge(minutes) {
 
 const LONG_MS = 550;
 
-function Commande({ cmd, maintenant, onServir, onDemanderEffacement }) {
+function Commande({ cmd, maintenant, onServir, onAppuiLong }) {
   // Appui long : effacer une commande saisie par erreur. Un appui franc et
   // maintenu, pour qu'une main posée sur l'écran ne déclenche rien.
   const appui = useRef(null);
@@ -29,7 +29,7 @@ function Commande({ cmd, maintenant, onServir, onDemanderEffacement }) {
     appui.current.timer = setTimeout(() => {
       annulerAppui();
       try { navigator.vibrate?.(30); } catch {}
-      onDemanderEffacement(cmd);
+      onAppuiLong(cmd);
     }, LONG_MS);
   };
   const bougeAppui = (e) => {
@@ -125,10 +125,10 @@ function Anomalie({ etat }) {
   );
 }
 
-export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onServir, onEffacer, onStats, onHistorique }) {
+export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onServir, onEffacer, onModifier, onStats, onHistorique }) {
   const maintenant = useHorloge(1000);
   const pieces = commandes.reduce((s, c) => s + c.lignes.reduce((n, l) => n + l.qte, 0), 0);
-  const [aEffacer, setAEffacer] = useState(null);
+  const [choisie, setChoisie] = useState(null);   // commande touchée par un appui long
 
   return (
     <>
@@ -196,7 +196,7 @@ export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onS
                   cmd={cmd}
                   maintenant={maintenant}
                   onServir={onServir}
-                  onDemanderEffacement={setAEffacer}
+                  onAppuiLong={setChoisie}
                 />
               ))}
             </div>
@@ -204,31 +204,42 @@ export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onS
         </div>
       </div>
 
-      {aEffacer && (
+      {choisie && (
         <div
           className="sheet-backdrop"
-          onClick={(e) => { if (e.target === e.currentTarget) setAEffacer(null); }}
+          onClick={(e) => { if (e.target === e.currentTarget) setChoisie(null); }}
           role="dialog"
           aria-modal="true"
-          aria-label="Effacer la commande"
+          aria-label={`Commande de la table ${choisie.table}`}
         >
           <div className="sheet">
             <div className="grab" />
-            <h2>Effacer la commande ?</h2>
+            <h2>Table {choisie.table}</h2>
             <p className="hint">
-              Table {aEffacer.table} · {aEffacer.lignes.reduce((s, l) => s + l.qte, 0)} pièce
-              {aEffacer.lignes.reduce((s, l) => s + l.qte, 0) > 1 ? 's' : ''}
-              {' — '}elle quittera le grill sur tous les téléphones.
-              Vous la retrouverez dans l’historique du jour.
+              {choisie.lignes.reduce((s, l) => s + l.qte, 0)} pièce
+              {choisie.lignes.reduce((s, l) => s + l.qte, 0) > 1 ? 's' : ''} · prise à{' '}
+              {new Date(choisie.creeeA).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
             </p>
+
+            {/* La correction est l'action courante, donc la plus en avant.
+                L'effacement reste accessible mais ne se trouve pas sous le
+                pouce par défaut. */}
+            <button
+              className="btn btn-primary btn-lg btn-block"
+              type="button"
+              onClick={() => { const c = choisie; setChoisie(null); onModifier(c); }}
+            >
+              ✎ Modifier la commande
+            </button>
+
             <div className="sheet-actions">
-              <button className="btn btn-ghost btn-lg" type="button" onClick={() => setAEffacer(null)}>
+              <button className="btn btn-ghost btn-lg" type="button" onClick={() => setChoisie(null)}>
                 Garder
               </button>
               <button
                 className="btn btn-danger btn-lg"
                 type="button"
-                onClick={() => { const c = aEffacer; setAEffacer(null); onEffacer(c.id); }}
+                onClick={() => { const c = choisie; setChoisie(null); onEffacer(c.id); }}
               >
                 Effacer
               </button>
