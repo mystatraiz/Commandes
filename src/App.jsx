@@ -8,6 +8,7 @@ import ChoixTable from './screens/ChoixTable.jsx';
 import Connexion from './screens/Connexion.jsx';
 import Dictee from './screens/Dictee.jsx';
 import Historique from './screens/Historique.jsx';
+import Recap from './screens/Recap.jsx';
 import Saisie from './screens/Saisie.jsx';
 import Stats from './screens/Stats.jsx';
 import { dicteeDisponible } from './lib/micro.js';
@@ -336,6 +337,7 @@ export default function App() {
           onModifier={modifier}
           onStats={() => pousser('stats')}
           onHistorique={() => pousser('historique')}
+          onRecap={() => pousser('recap')}
         />
       )}
 
@@ -359,6 +361,8 @@ export default function App() {
       )}
 
       {ecran === 'dictee' && <Dictee onValider={reprendreDictee} onRetour={retour} />}
+
+      {ecran === 'recap' && <Recap commandes={commandes} onRetour={retour} />}
 
       {ecran === 'historique' && (
         <Historique onRestaurer={restaurer} onRetour={retour} rafraichir={commandes.length} />

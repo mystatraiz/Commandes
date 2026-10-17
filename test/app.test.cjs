@@ -187,6 +187,26 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   await pg.locator('.topbar .btn-quiet').click();
   await pg.waitForTimeout(300);
 
+  console.log('\n== Récapitulatif du grill ==');
+  await pg.getByRole('button', { name: 'Récapitulatif du grill' }).click();
+  await pg.waitForTimeout(500);
+  ok((await pg.locator('.topbar .title').textContent()).includes('Sur le grill'), 'l’écran s’ouvre');
+
+  // Le total affiché doit égaler ce que l'accueil annonce au grill.
+  const totalRecap = Number(await pg.locator('.recap-total .n').textContent());
+  ok(Number.isFinite(totalRecap) && totalRecap > 0, `un total est affiché (${totalRecap})`);
+  const sommeGroupes = (await pg.locator('.recap-tete .somme').allTextContents())
+    .reduce((s, t) => s + Number(t), 0);
+  ok(sommeGroupes === totalRecap, `la somme des viandes égale le total (${sommeGroupes} / ${totalRecap})`);
+  const sommeLignes = (await pg.locator('.recap-lignes .qty').allTextContents())
+    .reduce((s, t) => s + Number(t), 0);
+  ok(sommeLignes === totalRecap, `la somme des lignes aussi (${sommeLignes})`);
+
+  await pg.locator('.topbar .btn-quiet').click();
+  await pg.waitForTimeout(400);
+  const piecesAccueil = Number((await pg.locator('.topbar .sub').textContent()).match(/(\d+) pièce/)[1]);
+  ok(piecesAccueil === totalRecap, `l’accueil annonce le même nombre de pièces (${piecesAccueil})`);
+
   console.log('\n== Effacer une commande par appui long ==');
   const avant = await pg.locator('.order').count();
   const carte = pg.locator('.order').first();

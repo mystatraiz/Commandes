@@ -15,7 +15,9 @@ plus récente, avec pour chacune le numéro de table, l'heure de prise, le déta
 des pièces et un chronomètre qui tourne. Le liseré passe au orange après
 8 minutes, au rouge après 15. Un bouton **✓ Servi** fait disparaître la commande
 une fois envoyée en salle — avec possibilité d'annuler si c'est une fausse
-manœuvre. Le bouton **Nouvelle commande** est en haut, toujours accessible.
+manœuvre. Le bouton **Nouvelle commande** est en haut, toujours accessible, et à côté
+trois icônes : le **récapitulatif** (violet) qui compte les pièces sur le
+grill, l'**historique du jour** et les **statistiques**.
 
 **Étape 1 — la table.** Toutes les tables sont posées à plat, comme un clavier
 de calculatrice, groupées par zone et repérées par sa couleur : **Salle** en
@@ -24,7 +26,7 @@ au lieu de le chercher, et l'appui vaut choix — pas de validation séparée. L
 tables qui ont déjà une commande en cours portent une pastille avec leur
 nombre, ce qui permet de repérer une erreur de numéro avant d'aller plus loin.
 
-Quatre tables par ligne, en touches larges. Les vingt-neuf tiennent à l'écran
+Quatre tables par ligne, en touches larges. Les trente et une tiennent à l'écran
 sans défiler, du petit téléphone à la tablette comme en paysage ; la hauteur
 des touches suit celle de l'écran, et un test le vérifie sur cinq formats à
 chaque exécution de la suite.
@@ -48,6 +50,33 @@ par l'écran des couleurs.
 
 **Envoyer** ramène à l'accueil, où la commande vient s'inscrire sous les
 précédentes, chronomètre lancé.
+
+## Compter les pièces sur le grill
+
+Le **petit bouton violet** en haut de l'accueil, à côté de l'horloge, ouvre le
+récapitulatif de l'instant : tout ce qui est en cours, **toutes les commandes
+confondues**, regroupé par pièce puis par cuisson.
+
+```
+11 pièces à cuire · 4 commandes
+
+Côte                                    5
+  3   Saignant                  T22 T12
+  1   Bleu                          T15
+  1   Saignant TRUFFE               T22
+Filet                                   2
+  ...
+```
+
+C'est l'inverse de l'accueil, qui range par table : ici deux morceaux ne sont
+« les mêmes » que si la pièce, la cuisson **et** la truffe coïncident — un filet
+saignant et un filet saignant truffé se comptent séparément, parce qu'ils ne
+partent pas de la même façon. Chaque ligne rappelle les tables qui attendent,
+pour retrouver d'où vient une pièce sans refermer l'écran.
+
+Le total en haut est le nombre de morceaux à poser, à vérifier d'un coup d'œil
+contre ce qui est sur la grille. L'écran se recalcule à chaque changement : une
+commande envoyée ou servie s'y voit aussitôt, sur tous les téléphones.
 
 ## Corriger une fausse manœuvre
 
@@ -355,7 +384,7 @@ npm run build
 npm test
 ```
 
-`npm test` enchaîne trois suites :
+`npm test` enchaîne sept suites :
 
 - `test/fusion.test.cjs` — l'arbitrage entre la version locale et celle du
   serveur, testé comme une fonction pure ;
@@ -364,6 +393,9 @@ npm test
   un faux serveur Supabase (`test/faux-supabase.cjs`) : code d'accès,
   propagation d'une commande d'un appareil à l'autre, coupure réseau, saisie
   hors ligne et rattrapage au retour, reprise par un appareil qui rejoint ;
+- `test/recap.test.cjs` — le regroupement des pièces du récapitulatif :
+  ce qui compte comme « le même morceau », les totaux, les tables listées, et
+  le cas des cartes modifiées ;
 - `test/vocal.test.cjs` — l'analyse des commandes dictées, cas par cas :
   numéros composés, pluriels, cumuls, formulations inversées, et les cas où
   l'analyse doit refuser de deviner ;
@@ -404,6 +436,7 @@ src/
     Stats.jsx             statistiques et vue tableau
     Connexion.jsx         saisie du code d'accès
     Historique.jsx        commandes du jour et restauration
+    Recap.jsx             les pièces sur le grill, regroupées
   components/
     Toast.jsx             messages et annulation
     MajPWA.jsx            proposition de mise à jour
@@ -413,6 +446,7 @@ src/
     micro.js              accès à la dictée du navigateur
     temps.js              horloge partagée et formats de durée
     stats.js              agrégation des commandes
+    recap.js              regroupement des pièces en cours (fonction pure)
     fusion.js             arbitrage local / serveur (fonction pure)
 test/                     tests navigateur (+ serveur statique intégré)
 ```
