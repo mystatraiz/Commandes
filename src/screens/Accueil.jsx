@@ -125,7 +125,7 @@ function Anomalie({ etat }) {
   );
 }
 
-export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onServir, onEffacer, onModifier, onStats, onHistorique }) {
+export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onServir, onEffacer, onModifier, onStats, onHistorique, onRecap }) {
   const maintenant = useHorloge(1000);
   const pieces = commandes.reduce((s, c) => s + c.lignes.reduce((n, l) => n + l.qte, 0), 0);
   const [choisie, setChoisie] = useState(null);   // commande touchée par un appui long
@@ -142,6 +142,13 @@ export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onS
           </span>
         </h1>
         <Partage etat={etatSync} />
+        {/* Récapitulatif du grill : ce qu'il y a à cuire, pièces identiques
+            réunies. Voisin de l'historique, distinct par sa couleur. */}
+        <button className="btn btn-icon recap-btn" type="button" onClick={onRecap} aria-label="Récapitulatif du grill">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 6.5h14M5 12h14M5 17.5h9" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+          </svg>
+        </button>
         <button className="btn btn-ghost btn-icon" type="button" onClick={onHistorique} aria-label="Historique du jour">
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="2" />
