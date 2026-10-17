@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RETENTION_JOURS, TABLES } from './config.js';
+import { RETENTION_JOURS } from './config.js';
 import * as db from './db.js';
 import * as sync from './sync.js';
 import { partageActif, sessionCourante, supabase } from './supabase.js';
@@ -141,11 +141,15 @@ export default function App() {
   /* ---------------- Saisie d'une commande ---------------- */
 
   const commencer = useCallback(() => {
-    setBrouillon({ table: TABLES[0], lignes: [] });
+    setBrouillon(BROUILLON_VIDE);
     pousser('table');
   }, [pousser]);
 
-  const choisirTable = useCallback((table) => setBrouillon((b) => ({ ...b, table })), []);
+  const choisirTable = useCallback((table) => {
+    vibrer(12);
+    setBrouillon((b) => ({ ...b, table }));
+    pousser('saisie');
+  }, [pousser]);
 
   const dicter = useCallback(() => {
     setBrouillon(BROUILLON_VIDE);
@@ -159,12 +163,16 @@ export default function App() {
       table: resultat.table,
       lignes: resultat.lignes.map(({ grillade, cuisson, qte }) => ({ grillade, cuisson, qte })),
     });
-    // Remplace l'écran de dictée plutôt que de l'empiler : revenir en arrière
-    // depuis la saisie doit ramener à l'accueil, pas relancer le micro.
-    setPile((p) => [...p.slice(0, -1), 'saisie']);
+    // L'écran de dictée cède sa place au pavé, puis la saisie s'empile
+    // par-dessus : revenir en arrière ramène au choix de table en gardant la
+    // commande, ce qui permet de rattraper un numéro mal entendu. Relancer le
+    // micro par mégarde, en revanche, n'aurait aucun intérêt.
+    setPile((p) => {
+      const base = [...p.slice(0, -1), 'table'];
+      window.history.pushState({ profondeur: base.length + 1 }, '');
+      return [...base, 'saisie'];
+    });
   }, []);
-
-  const validerTable = useCallback(() => { vibrer(12); pousser('saisie'); }, [pousser]);
 
   /** Ajoute une pièce ; deux fois la même viande et la même cuisson se cumulent. */
   const ajouter = useCallback((grillade, cuisson) => {
@@ -231,6 +239,11 @@ export default function App() {
 
   /* ---------------- Rendu ---------------- */
 
+  // Tables qui ont déjà une commande en cours, affichées en pastille.
+  const occupees = {};
+  for (const c of commandes) occupees[c.table] = (occupees[c.table] || 0) + 1;
+
+
   if (!pret) return <div className="app" />;
 
   if (partageActif && !connecte) {
@@ -256,12 +269,7 @@ export default function App() {
       )}
 
       {ecran === 'table' && (
-        <ChoixTable
-          valeur={brouillon.table || TABLES[0]}
-          onChange={choisirTable}
-          onValider={validerTable}
-          onRetour={abandonner}
-        />
+        <ChoixTable onChoisir={choisirTable} onRetour={abandonner} occupees={occupees} />
       )}
 
       {ecran === 'saisie' && (

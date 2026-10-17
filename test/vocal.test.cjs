@@ -18,19 +18,30 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
       `${libelle}\n         « ${texte} »\n         attendu : table ${table} · ${attendu || '(rien)'}\n         obtenu  : table ${r.table} · ${obtenu || '(rien)'}`);
   };
 
+  const { ZONES, TABLES, zoneDeTable } = await import('../src/config.js');
+
+  console.log('\n== Plan de salle ==');
+  ok(TABLES.length === new Set(TABLES).size, 'aucun numéro de table en double entre les zones');
+  ok(TABLES.length === ZONES.reduce((n, z) => n + z.tables.length, 0),
+    'la liste à plat reprend exactement les tables des zones');
+  ok(ZONES.every((z) => z.couleur && z.nom), 'chaque zone a un nom et une couleur');
+  ok(new Set(ZONES.map((z) => z.couleur)).size === ZONES.length, 'une couleur distincte par zone');
+  ok(zoneDeTable('201')?.id === 'tonnelle', 'une table est rattachée à sa zone');
+  ok(zoneDeTable('12') === null, 'une table absente du plan n’appartient à aucune zone');
+
   console.log('\n== Normalisation ==');
   ok(normaliser('Côte à Point !') === 'cote a point', 'accents et ponctuation retirés');
   ok(normaliser("l’entrecôte") === 'l entrecote', 'apostrophe traitée comme une séparation');
 
   console.log('\n== Commandes courantes ==');
-  cas('table 12 deux côtes saignantes et un poulet', '12',
+  cas('table 22 deux côtes saignantes et un poulet', '22',
     '2 cote/saig + 1 poulet/-', 'plusieurs pièces dans une phrase');
-  cas('table 22 une bavette à point', '22', '1 bavette/apnt', 'une pièce simple');
+  cas('table 25 une bavette à point', '25', '1 bavette/apnt', 'une pièce simple');
   cas('table 7 trois gigots bien cuits et deux magrets rosés', '7',
     '3 gigot/bcui + 2 magret/apnt', 'quantités et cuissons multiples');
 
   console.log('\n== Numéros de table ==');
-  cas('table douze une bavette à point', '12', '1 bavette/apnt',
+  cas('table onze une bavette à point', '11', '1 bavette/apnt',
     'nombre en toutes lettres, sans absorber la quantité qui suit');
   cas('table cinquante cinq deux entrecôtes bleues', '55', '2 etc/bleu', 'nombre composé');
   cas('table deux cent un un tomahawk saignant', '201', '1 tmhk/saig', 'centaine composée');
@@ -38,6 +49,8 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   cas('quinze une côte saignante', '15', '1 cote/saig', 'le mot « table » peut manquer');
   ok(analyser('deux côtes saignantes').table === null, 'aucune table inventée si rien ne correspond');
   ok(analyser('table 13 une côte bleue').table === null, 'une table hors du plan de salle est refusée');
+  ok(analyser('table 12 une côte bleue').table === null, 'une table retirée du plan n’est plus reconnue');
+  cas('table 25 une côte bleue', '25', '1 cote/bleu', 'une table ajoutée au plan est reconnue');
 
   console.log('\n== Pluriels et variantes ==');
   cas('table 5 deux entrecôtes bleues', '5', '2 etc/bleu', 'pluriel non listé dans la configuration');
@@ -79,7 +92,7 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   ok(analyser(null).lignes.length === 0, 'valeur nulle tolérée');
 
   console.log('\n== Mots non reconnus signalés ==');
-  const r = analyser('table 12 une côte saignante et des frites');
+  const r = analyser('table 22 une côte saignante et des frites');
   ok(r.motsIgnores.includes('frites'), 'ce qui n’a pas été compris est rapporté');
 
   console.log(fails ? `\n${fails} ÉCHEC(S)` : '\nTOUT PASSE');

@@ -60,22 +60,21 @@ async function jusqua(fn, limite = 12000, pas = 250) {
   console.log('\n== Une commande passe d’un téléphone à l’autre ==');
   const prendreCommande = async (pg, table, viande, cuisson) => {
     await pg.getByRole('button', { name: /Nouvelle commande/ }).click();
-    await pg.locator('.wheel-item', { hasText: new RegExp(`^${table}$`) }).click();
-    await attendre(700);
-    await pg.locator('.footer-bar .btn').click();
+    await pg.locator('.touche', { hasText: new RegExp(`^${table}$`) }).click();
+    await attendre(300);
     await pg.locator('.meat', { hasText: viande }).first().click();
     if (cuisson) await pg.locator('.cuisson-btn', { hasText: cuisson }).click();
     await pg.locator('.footer-bar .btn').click();
     await attendre(400);
   };
 
-  await prendreCommande(A.pg, '12', 'Côte', 'Saignant');
+  await prendreCommande(A.pg, '11', 'Côte', 'Saignant');
   ok(await A.pg.locator('.order').count() === 1, 'la commande apparaît sur le téléphone qui l’a prise');
   ok(await jusqua(() => api.lignes.size === 1), 'elle est bien montée sur le serveur');
 
   ok(await jusqua(async () => (await B.pg.locator('.order').count()) === 1),
     'elle descend toute seule sur le second téléphone');
-  ok((await B.pg.locator('.order-table').textContent()).includes('Table 12'), 'au bon numéro de table');
+  ok((await B.pg.locator('.order-table').textContent()).includes('Table 11'), 'au bon numéro de table');
   ok((await B.pg.locator('.order-line').textContent()).includes('Côte'), 'avec le bon contenu');
 
   console.log('\n== Servir depuis un téléphone efface sur l’autre ==');
