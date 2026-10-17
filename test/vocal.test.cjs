@@ -29,7 +29,9 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   ok(ZONES.every((z) => z.couleur && z.nom), 'chaque zone a un nom et une couleur');
   ok(new Set(ZONES.map((z) => z.couleur)).size === ZONES.length, 'une couleur distincte par zone');
   ok(zoneDeTable('201')?.id === 'tonnelle', 'une table est rattachée à sa zone');
-  ok(zoneDeTable('12') === null, 'une table absente du plan n’appartient à aucune zone');
+  ok(zoneDeTable('26') === null, 'un numéro absent du plan n’appartient à aucune zone');
+  ok(zoneDeTable('12')?.id === 'salle', 'les tables 12 et 14 sont rattachées à la Salle');
+  ok(zoneDeTable('14')?.id === 'salle', 'la 14 aussi');
 
   console.log('\n== Normalisation ==');
   ok(normaliser('Côte à Point !') === 'cote a point', 'accents et ponctuation retirés');
@@ -51,7 +53,9 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   cas('quinze une côte saignante', '15', '1 cote/saig', 'le mot « table » peut manquer');
   ok(analyser('deux côtes saignantes').table === null, 'aucune table inventée si rien ne correspond');
   ok(analyser('table 13 une côte bleue').table === null, 'une table hors du plan de salle est refusée');
-  ok(analyser('table 12 une côte bleue').table === null, 'une table retirée du plan n’est plus reconnue');
+  ok(analyser('table 26 une côte bleue').table === null, 'un numéro absent du plan n’est jamais retenu');
+  cas('table 12 une côte bleue', '12', '1 cote/bleu', 'une table rajoutée au plan est reconnue');
+  cas('table quatorze une côte bleue', '14', '1 cote/bleu', 'y compris dite en toutes lettres');
   cas('table 25 une côte bleue', '25', '1 cote/bleu', 'une table ajoutée au plan est reconnue');
 
   console.log('\n== Pluriels et variantes ==');

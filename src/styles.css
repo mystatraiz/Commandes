@@ -277,7 +277,7 @@ ul, ol { list-style: none; padding: 0; }
    Pavé de sélection des tables
    ============================================================ */
 
-.zone { margin-bottom: 15px; }
+.zone { margin-bottom: 12px; }
 .zone:last-child { margin-bottom: 4px; }
 
 .zone-titre {
@@ -317,7 +317,7 @@ ul, ol { list-style: none; padding: 0; }
      colonne, et seule la hauteur s'adapte à l'écran — huit rangées doivent
      tenir sur les téléphones les plus courts sans rester riquiqui sur les
      plus grands. */
-  height: clamp(46px, 8.4dvh, 82px);
+  height: clamp(44px, 7.5dvh, 78px);
   border-radius: var(--r-md);
   font-size: clamp(19px, 6vw, 26px);
   font-weight: 800;
@@ -731,9 +731,9 @@ table.data td { text-align: right; font-weight: 700; color: var(--ink-soft); }
 /* Téléphones courts : on resserre l'habillage des zones plutôt que de
    rapetisser les touches, qui sont justement ce qu'on vient d'agrandir. */
 @media (orientation: portrait) and (max-height: 700px) {
-  .zone { margin-bottom: 9px; }
-  .zone-titre { margin-bottom: 5px; font-size: 11px; }
-  .content { padding-top: 10px; }
+  .zone { margin-bottom: 6px; }
+  .zone-titre { margin-bottom: 4px; font-size: 11px; }
+  .content { padding-top: 8px; padding-bottom: calc(8px + var(--sab)); }
 }
 
 /* Grands écrans : on centre plutôt que d'étirer à l'infini */
