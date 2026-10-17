@@ -55,7 +55,7 @@ function PanneauCuissons({ grillade, onChoisir, onFermer }) {
   );
 }
 
-export default function Saisie({ brouillon, onAjouter, onRetirer, onEnvoyer, onChangerTable }) {
+export default function Saisie({ brouillon, onAjouter, onRetirer, onEnvoyer, onRetour, onChangerTable }) {
   const [enAttente, setEnAttente] = useState(null);   // grillade dont on choisit la cuisson
   const correction = Boolean(brouillon.id);           // commande déjà envoyée, en cours de retouche
 
@@ -79,26 +79,28 @@ export default function Saisie({ brouillon, onAjouter, onRetirer, onEnvoyer, onC
   return (
     <>
       <header className="topbar">
-        <button
-          className="btn btn-quiet btn-icon"
-          type="button"
-          onClick={onChangerTable}
-          aria-label="Changer de table"
-        >
+        <button className="btn btn-quiet btn-icon" type="button" onClick={onRetour} aria-label="Retour">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <h1 className="title">
-          Table {brouillon.table}
+        {/* Le numéro est un bouton : c'est par là qu'on corrige une commande
+            partie sur la mauvaise table, sans avoir à tout ressaisir. */}
+        <button className="titre-table" type="button" onClick={onChangerTable}>
+          <span className="t">
+            Table {brouillon.table}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
           <span className="sub">
             {correction
-              ? `Correction · ${pieces} pièce${pieces > 1 ? 's' : ''}`
+              ? `Correction · ${pieces} pièce${pieces > 1 ? 's' : ''} · appuyez pour changer de table`
               : pieces
                 ? `${pieces} pièce${pieces > 1 ? 's' : ''} · appuyez pour ajouter`
                 : 'Étape 2 sur 2 — les grillades'}
           </span>
-        </h1>
+        </button>
       </header>
 
       <div className="content">
