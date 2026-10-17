@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CUISSONS, GRILLADES, cuissonById, grilladeById } from '../config.js';
+import { CUISSONS, GRILLADES, TRUFFE, cuissonById, grilladeById } from '../config.js';
 import { ecouter } from '../lib/micro.js';
 import { analyser } from '../lib/vocal.js';
 
@@ -121,6 +121,15 @@ export default function Dictee({ onValider, onRetour }) {
                               <button type="button" onClick={() => majLigne(i, { qte: Math.min(99, l.qte + 1) })} aria-label="Une de plus">+</button>
                             </span>
                             <span className="nom">{nomGrillade(l.grillade)}</span>
+                            <label className="truffe-case compacte">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(l.truffe)}
+                                onChange={(e) => majLigne(i, { truffe: e.target.checked || undefined })}
+                              />
+                              <span className="coche" aria-hidden="true" />
+                              {TRUFFE.nom}
+                            </label>
                             <button className="oter" type="button" onClick={() => retirerLigne(i)} aria-label={`Retirer ${nomGrillade(l.grillade)}`}>×</button>
                           </div>
                           {!def?.sansCuisson && (

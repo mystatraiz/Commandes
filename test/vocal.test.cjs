@@ -10,7 +10,9 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   const { analyser, normaliser } = await import('../src/lib/vocal.js');
 
   // Raccourci de lecture : « 2 cote/saig » décrit une ligne attendue.
-  const resume = (r) => r.lignes.map((l) => `${l.qte} ${l.grillade}/${l.cuisson ?? '-'}${l.incomplete ? '!' : ''}`).join(' + ');
+  const resume = (r) => r.lignes
+    .map((l) => `${l.qte} ${l.grillade}/${l.cuisson ?? '-'}${l.truffe ? '+T' : ''}${l.incomplete ? '!' : ''}`)
+    .join(' + ');
   const cas = (texte, table, attendu, libelle) => {
     const r = analyser(texte);
     const obtenu = resume(r);
@@ -57,6 +59,29 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   cas('table 5 une entrecôte bleue', '5', '1 etc/bleu', 'singulier');
   cas('table 5 une côte de bœuf bien cuite', '5', '1 cote/bcui', 'formulation longue');
   cas('table 5 un châteaubriand à point', '5', '1 chatb/apnt', 'nom complet d’une abréviation');
+
+  console.log('\n== Carte à jour ==');
+  const { grilladeById } = await import('../src/lib/stats.js');
+  ok(!grilladeById('ribcap'), 'RibCap est retiré de la carte');
+  cas('table 22 un filet saignant', '22', '1 filet/saig', 'Filet est reconnu');
+  cas('table 22 deux filets de bœuf bleus', '22', '2 filet/bleu', 'sous sa forme longue aussi');
+
+  console.log('\n== Un qualificatif ne déborde pas sur la pièce suivante ==');
+  // Le piège : la cuisson de la pièce d'avant ne doit pas être recopiée sur la
+  // suivante, sinon une pièce part sur une cuisson que personne n'a demandée.
+  cas('table 22 deux filets bleus et une côte', '22', '2 filet/bleu + 1 cote/-!',
+    'la côte sans cuisson reste à compléter');
+  cas('table 22 un filet bleu et une bavette à point', '22', '1 filet/bleu + 1 bavette/apnt',
+    'chaque pièce garde la sienne');
+
+  console.log('\n== Truffe ==');
+  cas('table 22 une côte saignante avec truffe', '22', '1 cote/saig+T', 'supplément reconnu après la pièce');
+  cas('table 22 une côte truffée saignante', '22', '1 cote/saig+T', 'ou collé au nom de la pièce');
+  cas('table 22 deux filets bleus truffés et une côte saignante', '22',
+    '2 filet/bleu+T + 1 cote/saig', 'la truffe ne déborde pas sur la pièce suivante');
+  cas('table 22 une côte saignante et une côte saignante truffée', '22',
+    '1 cote/saig + 1 cote/saig+T', 'truffée ou non, ce sont deux lignes distinctes');
+  cas('table 22 une côte saignante', '22', '1 cote/saig', 'sans truffe, rien n’est ajouté');
 
   console.log('\n== La variante la plus longue gagne ==');
   cas('table 9 un tomahawk wagyu saignant', '9', '1 tmhkw/saig',

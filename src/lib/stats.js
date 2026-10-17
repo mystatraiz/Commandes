@@ -11,6 +11,7 @@ export const nbPieces = (cmd) => cmd.lignes.reduce((s, l) => s + l.qte, 0);
  */
 export function calculer(commandes) {
   const pieces = { total: 0, parGrillade: {}, parCuisson: {} };
+  let truffes = 0;
   const parTable = {};
   const parHeure = Array.from({ length: 24 }, () => 0);
   const durees = [];
@@ -27,6 +28,7 @@ export function calculer(commandes) {
       pieces.parGrillade[l.grillade] = (pieces.parGrillade[l.grillade] || 0) + l.qte;
       // Le poulet n'a pas de cuisson : il ne doit pas fausser la répartition.
       if (l.cuisson) pieces.parCuisson[l.cuisson] = (pieces.parCuisson[l.cuisson] || 0) + l.qte;
+      if (l.truffe) truffes += l.qte;   // supplément facturé : il mérite son compte
     }
   }
 
@@ -63,6 +65,7 @@ export function calculer(commandes) {
   return {
     nbCommandes: commandes.length,
     pieces: pieces.total,
+    truffes,
     piecesAvecCuisson,
     moyenneParCommande: commandes.length ? pieces.total / commandes.length : 0,
     dureeMoyenne,

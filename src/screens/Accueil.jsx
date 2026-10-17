@@ -1,4 +1,4 @@
-import { SEUIL_ORANGE, SEUIL_ROUGE, cuissonById, grilladeById } from '../config.js';
+import { SEUIL_ORANGE, SEUIL_ROUGE, TRUFFE, cuissonById, grilladeById } from '../config.js';
 import { formatChrono, useHorloge } from '../lib/temps.js';
 
 function classeAge(minutes) {
@@ -35,7 +35,10 @@ function Commande({ cmd, maintenant, onServir }) {
               >
                 {l.qte}
               </span>
-              <span className="nom">{g ? g.nom : l.grillade}</span>
+              <span className="nom">
+                {g ? g.nom : l.grillade}
+                {l.truffe && <b className="truffe-tag">{TRUFFE.etiquette}</b>}
+              </span>
               {c && <span className="cuisson">{c.nom}</span>}
             </li>
           );

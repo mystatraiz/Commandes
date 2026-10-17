@@ -58,6 +58,20 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   ok((await pg.locator('.topbar .title').textContent()).includes('Table 22'),
     'un appui sur une table mène directement aux grillades');
   ok(await pg.locator('.meat').count() === 13, '13 grillades proposées');
+  const nomsViandes = await pg.locator('.meat').allTextContents();
+  ok(nomsViandes.some((n) => n.includes('Filet')), 'Filet figure sur la carte');
+  ok(!nomsViandes.some((n) => n.includes('RibCap')), 'RibCap n’y figure plus');
+
+  // Liserés : quatre familles, et chaque bouton porte celui de la sienne.
+  const liserets = await pg.locator('.meat').evaluateAll((n) =>
+    n.map((b) => b.style.getPropertyValue('--famille').trim()));
+  ok(new Set(liserets).size === 4, `quatre couleurs de liseré (${new Set(liserets).size})`);
+  ok(liserets.every(Boolean), 'aucune grillade sans liseré');
+  const liseretDe = async (nom) => (await pg.locator('.meat', { hasText: nom }).first()
+    .evaluate((b) => b.style.getPropertyValue('--famille').trim()));
+  ok(await liseretDe('Côte') === await liseretDe('Filet'), 'Côte et Filet partagent le liseré');
+  ok(await liseretDe('Poulet') === await liseretDe('Magret'), 'Poulet et Magret partagent le leur');
+  ok(await liseretDe('Côte') !== await liseretDe('Agneau'), 'les familles se distinguent');
   const cols = await pg.evaluate(() => getComputedStyle(document.querySelector('.meats')).gridTemplateColumns.split(' ').length);
   ok(cols === 2, `2 colonnes en portrait (${cols})`);
   ok(await pg.locator('.footer-bar .btn').isDisabled(), 'envoi impossible tant que rien n’est choisi');
@@ -76,6 +90,28 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   await pg.locator('.cuisson-btn', { hasText: 'Saignant' }).click();
   ok(await pg.locator('.chip').count() === 1, 'les pièces identiques se cumulent');
   ok((await pg.locator('.chip').first().textContent()).includes('2×'), 'la quantité passe à 2');
+
+  console.log('\n== Truffe ==');
+  await pg.locator('.meat', { hasText: 'Filet' }).first().click();
+  ok(await pg.locator('.truffe-case').count() === 1, 'la case Truffe est proposée avec la cuisson');
+  ok(!(await pg.locator('.truffe-case input').isChecked()), 'elle est décochée par défaut');
+  await pg.locator('.truffe-case').click();
+  ok(await pg.locator('.truffe-case input').isChecked(), 'elle se coche');
+  await pg.locator('.cuisson-btn', { hasText: 'Bleu' }).click();
+  await pg.waitForTimeout(200);
+  const pucesT = await pg.locator('.chip').allTextContents();
+  ok(pucesT.some((t) => t.includes('Filet') && t.includes('TRUFFE')), 'TRUFFE s’affiche à côté de la pièce');
+
+  // Une pièce truffée et la même sans truffe restent deux lignes distinctes.
+  await pg.locator('.meat', { hasText: 'Filet' }).first().click();
+  ok(!(await pg.locator('.truffe-case input').isChecked()), 'la case repart décochée');
+  await pg.locator('.cuisson-btn', { hasText: 'Bleu' }).click();
+  await pg.waitForTimeout(200);
+  ok(await pg.locator('.chip', { hasText: 'Filet' }).count() === 2,
+    'truffée ou non, ce sont deux lignes séparées');
+  await pg.locator('.chip', { hasText: 'TRUFFE' }).locator('.x').click();
+  await pg.locator('.chip', { hasText: 'Filet' }).locator('.x').click();
+  await pg.waitForTimeout(200);
 
   console.log('\n== Le poulet n’a pas de cuisson ==');
   await pg.locator('.meat', { hasText: 'Poulet' }).click();
@@ -98,6 +134,20 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   ok((await pg.locator('.order-table').textContent()).includes('Table 22'), 'au bon numéro de table');
   ok(/\d+′\d\d/.test(await pg.locator('.chrono').textContent()), 'un chronomètre démarre');
   ok(await pg.locator('.order-line').count() === 2, 'les deux lignes sont reprises');
+
+  console.log('\n== TRUFFE suit jusqu’à la commande envoyée ==');
+  await pg.getByRole('button', { name: /Nouvelle commande/ }).click();
+  await pg.locator('.touche', { hasText: /^15$/ }).click();
+  await pg.waitForTimeout(300);
+  await pg.locator('.meat', { hasText: 'Côte' }).first().click();
+  await pg.locator('.truffe-case').click();
+  await pg.locator('.cuisson-btn', { hasText: 'Saignant' }).click();
+  await pg.locator('.footer-bar .btn').click();
+  await pg.waitForTimeout(400);
+  const ligneT = await pg.locator('.order', { hasText: 'Table 15' }).locator('.order-line').textContent();
+  ok(ligneT.includes('Côte') && ligneT.includes('TRUFFE'), 'l’étiquette apparaît sur la commande en cours');
+  await pg.locator('.order', { hasText: 'Table 15' }).getByRole('button', { name: /Servi/ }).click();
+  await pg.waitForTimeout(400);
 
   console.log('\n== Les commandes s’empilent dans l’ordre ==');
   await pg.getByRole('button', { name: /Nouvelle commande/ }).click();
@@ -141,8 +191,11 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   await pg.waitForTimeout(400);
   ok((await pg.locator('.topbar .title').textContent()).includes('Statistiques'), 'écran des statistiques');
   const kpis = await pg.locator('.kpi').count();
-  ok(kpis === 4, '4 indicateurs clés');
-  ok((await pg.locator('.kpi').nth(0).textContent()).includes('2'), '2 commandes comptées');
+  // Quatre indicateurs de base, plus celui des truffes dès qu'il y en a eu.
+  ok(kpis === 5, `cinq indicateurs clés, truffes comprises (${kpis})`);
+  ok((await pg.locator('.kpi').nth(0).textContent()).includes('3'), 'les trois commandes sont comptées');
+  const tuileTruffe = await pg.locator('.kpi', { hasText: 'Truffes' }).textContent();
+  ok(tuileTruffe.includes('1'), 'la pièce truffée est comptée à part');
   ok(await pg.locator('.stack-seg').count() >= 1, 'répartition des cuissons tracée');
   ok(await pg.locator('.bars .bar-row').count() >= 2, 'classement des grillades tracé');
   ok(await pg.locator('.hours .col').count() >= 1, 'activité par heure tracée');
