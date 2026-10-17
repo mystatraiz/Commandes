@@ -21,8 +21,15 @@ des pièces et un chronomètre qui tourne. Le liseré passe au orange après
 une fois envoyée en salle — avec possibilité d'annuler si c'est une fausse
 manœuvre. Le bouton **Nouvelle commande** est en haut, toujours accessible.
 
-**Étape 1 — la table.** Une roue façon sélecteur iOS, dans l'ordre du plan de
-salle. On la fait tourner ou on tape directement le numéro voulu.
+**Étape 1 — la table.** Toutes les tables sont posées à plat, comme un clavier
+de calculatrice, groupées par zone et repérées par sa couleur : **Salle** en
+bleu, **Véranda** en vert, **Tonnelle** en rose. On vise directement son numéro
+au lieu de le chercher, et l'appui vaut choix — pas de validation séparée. Les
+tables qui ont déjà une commande en cours portent une pastille avec leur
+nombre, ce qui permet de repérer une erreur de numéro avant d'aller plus loin.
+
+Les vingt-neuf tables tiennent à l'écran sans défiler, en portrait comme en
+paysage ; un test le vérifie à chaque exécution de la suite.
 
 **Étape 2 — les grillades.** Les pièces en deux colonnes. Un appui ouvre le
 choix de la cuisson, quatre grandes touches de couleur ; l'appui sur la cuisson
@@ -238,7 +245,7 @@ Sur Vercel : importer le dépôt, laisser les réglages proposés, déployer.
 Tout se règle dans `src/config.js`, sans toucher au reste :
 
 ```js
-export const TABLES      = ['1','2','3', …];   // ordre de la roue
+export const ZONES       = [ … ];              // zones, couleurs et tables
 export const CUISSONS    = [ … ];              // libellés et couleurs
 export const GRILLADES   = [ … ];              // la carte du grill
 export const SEUIL_ORANGE = 8;                 // minutes avant le orange
@@ -248,6 +255,26 @@ export const RETENTION_JOURS = 365;            // durée de l'historique
 
 Pour qu'une pièce saute l'écran des cuissons, lui ajouter `sansCuisson: true` —
 c'est ce qui est fait pour le poulet.
+
+Le plan de salle est décrit par zone, et c'est de là que tout découle : l'ordre
+du pavé, les couleurs, et la liste des tables que la dictée sait reconnaître.
+
+```js
+export const ZONES = [
+  { id: 'salle',    nom: 'Salle',    couleur: '#16A4E2', tables: ['1', '2', …] },
+  { id: 'veranda',  nom: 'Véranda',  couleur: '#4EB068', tables: ['15', '16', …] },
+  { id: 'tonnelle', nom: 'Tonnelle', couleur: '#C876C1', tables: ['100', '101', …] },
+];
+```
+
+Ajouter une zone, renommer « Tonnelle », déplacer une table ou changer une
+couleur se fait ici seul. Les trois couleurs ont été calées pour ressortir du
+fond sombre et se distinguer entre elles ; si vous les changez, gardez-les
+éloignées des teintes des cuissons, qui veulent dire autre chose.
+
+Retirer une table du plan ne touche pas aux commandes passées : elles restent
+affichées et comptées dans les statistiques. Elle cesse simplement d'être
+proposée, et la dictée ne la reconnaît plus.
 
 Retirer une grillade de la carte ne casse pas l'historique : les commandes
 passées qui la mentionnent restent comptées dans les statistiques.
@@ -262,7 +289,9 @@ lecteurs.
 ## Tests
 
 Les tests pilotent un vrai navigateur (Playwright) sur l'application construite,
-en simulant un téléphone tactile : parcours complet de prise de commande, roue,
+en simulant un téléphone tactile : parcours complet de prise de commande, pavé
+des tables (dont le fait que tout tienne à l'écran et que les touches soient
+assez grandes),
 cumul des pièces identiques, cas du poulet, persistance après rechargement,
 commande servie et son annulation, statistiques, vue tableau et bouton retour.
 
@@ -308,19 +337,18 @@ vite.config.js            build + génération du PWA (manifeste, service worker
 public/                   icônes
 supabase/schema.sql       à coller dans Supabase pour créer la base partagée
 src/
-  config.js               carte, plan de salle, cuissons, seuils
+  config.js               zones et tables, carte, cuissons, seuils
   db.js                   IndexedDB (+ secours localStorage) et brouillon
   supabase.js             connexion au serveur et code d'accès
   sync.js                 synchronisation entre téléphones
   App.jsx                 navigation, données, actions
   screens/
     Accueil.jsx           commandes en cours
-    ChoixTable.jsx        étape 1 — la roue
+    ChoixTable.jsx        étape 1 — le pavé des tables par zone
     Saisie.jsx            étape 2 — grillades et cuissons
     Stats.jsx             statistiques et vue tableau
     Connexion.jsx         saisie du code d'accès
   components/
-    Roue.jsx              le sélecteur de table
     Toast.jsx             messages et annulation
     MajPWA.jsx            proposition de mise à jour
     Dictee.jsx            relecture d'une commande dictée

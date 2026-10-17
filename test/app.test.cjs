@@ -31,25 +31,32 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   }));
   ok(deb.sw <= deb.cw + 1, `largeur ${deb.sw} <= ${deb.cw}`);
 
-  console.log('\n== Roue de sélection de table ==');
+  console.log('\n== Pavé de sélection des tables ==');
   await pg.getByRole('button', { name: /Nouvelle commande/ }).click();
-  ok(await pg.locator('.wheel').isVisible(), 'la roue s’affiche');
-  ok(await pg.locator('.wheel-item').count() === 30, '30 tables proposées');
-  const ordre = await pg.locator('.wheel-item').allTextContents();
-  ok(ordre[0] === '1' && ordre[5] === '55' && ordre[6] === '6', 'ordre respecté (…5, 55, 6…)');
-  ok(ordre[ordre.length - 1] === '401', 'se termine par 401');
-  // La roue démarre sur la première table et le bouton la reprend.
-  ok((await pg.locator('.footer-bar .btn').textContent()).includes('Table 1'), 'le bouton reprend la table visée');
+  ok(await pg.locator('.pave').count() === 3, 'trois zones affichées');
+  ok(await pg.locator('.touche').count() === 29, '29 tables proposées');
+  const titres = await pg.locator('.zone-titre').allTextContents();
+  ok(titres[0].includes('Salle') && titres[1].includes('Véranda') && titres[2].includes('Tonnelle'),
+    'les zones sont nommées dans l’ordre');
+  const couleurs = await pg.locator('.zone').evaluateAll((n) => n.map((z) => z.style.getPropertyValue('--zone')));
+  ok(new Set(couleurs).size === 3, 'une couleur distincte par zone');
 
-  // On fait tourner la roue jusqu'à la table 12.
-  await pg.locator('.wheel-item', { hasText: /^12$/ }).click();
-  await pg.waitForTimeout(600);
-  ok((await pg.locator('.footer-bar .btn').textContent()).includes('Table 12'), 'la roue s’arrête sur 12');
-  ok(await pg.locator('.wheel-item.on').textContent() === '12', 'le cran 12 est mis en avant');
+  // Tout doit se voir d'un coup : c'est l'intérêt du pavé face à la roue.
+  const horsEcran = await pg.locator('.touche').evaluateAll((n) => {
+    const h = window.innerHeight;
+    return n.filter((b) => { const r = b.getBoundingClientRect(); return r.bottom > h || r.top < 0; }).length;
+  });
+  ok(horsEcran === 0, `toutes les tables tiennent à l’écran sans défiler (${horsEcran} hors champ)`);
+
+  const premiere = await pg.locator('.touche').first().boundingBox();
+  ok(premiere.width >= 44 && premiere.height >= 44,
+    `les touches sont assez grandes pour le doigt (${Math.round(premiere.width)}×${Math.round(premiere.height)})`);
 
   console.log('\n== Choix des grillades ==');
-  await pg.locator('.footer-bar .btn').click();
-  ok((await pg.locator('.topbar .title').textContent()).includes('Table 12'), 'la table choisie est rappelée');
+  await pg.locator('.touche', { hasText: /^22$/ }).click();
+  await pg.waitForTimeout(300);
+  ok((await pg.locator('.topbar .title').textContent()).includes('Table 22'),
+    'un appui sur une table mène directement aux grillades');
   ok(await pg.locator('.meat').count() === 13, '13 grillades proposées');
   const cols = await pg.evaluate(() => getComputedStyle(document.querySelector('.meats')).gridTemplateColumns.split(' ').length);
   ok(cols === 2, `2 colonnes en portrait (${cols})`);
@@ -88,21 +95,20 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   await pg.locator('.footer-bar .btn').click();
   await pg.waitForTimeout(400);
   ok(await pg.locator('.order').count() === 1, 'la commande apparaît sur l’accueil');
-  ok((await pg.locator('.order-table').textContent()).includes('Table 12'), 'au bon numéro de table');
+  ok((await pg.locator('.order-table').textContent()).includes('Table 22'), 'au bon numéro de table');
   ok(/\d+′\d\d/.test(await pg.locator('.chrono').textContent()), 'un chronomètre démarre');
   ok(await pg.locator('.order-line').count() === 2, 'les deux lignes sont reprises');
 
   console.log('\n== Les commandes s’empilent dans l’ordre ==');
   await pg.getByRole('button', { name: /Nouvelle commande/ }).click();
-  await pg.locator('.wheel-item', { hasText: /^22$/ }).click();
-  await pg.waitForTimeout(600);
-  await pg.locator('.footer-bar .btn').click();
+  await pg.locator('.touche', { hasText: /^101$/ }).click();
+  await pg.waitForTimeout(300);
   await pg.locator('.meat', { hasText: 'Magret' }).click();
   await pg.locator('.cuisson-btn', { hasText: 'À Point' }).click();
   await pg.locator('.footer-bar .btn').click();
   await pg.waitForTimeout(400);
   const tables = await pg.locator('.order-table').allTextContents();
-  ok(tables.length === 2 && tables[0].includes('12') && tables[1].includes('22'),
+  ok(tables.length === 2 && tables[0].includes('22') && tables[1].includes('101'),
     'la nouvelle commande se place en dessous de la précédente');
 
   console.log('\n== Persistance après rechargement ==');
@@ -118,6 +124,15 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   await pg.locator('.toast .btn-primary').click();
   await pg.waitForTimeout(300);
   ok(await pg.locator('.order').count() === 2, 'l’annulation la remet en cours');
+
+  console.log('\n== Tables déjà servies repérées ==');
+  await pg.getByRole('button', { name: /Nouvelle commande/ }).click();
+  await pg.waitForTimeout(300);
+  ok(await pg.locator('.touche.occupee').count() >= 1, 'une table avec commande en cours est marquée');
+  ok((await pg.locator('.touche.occupee').first().locator('.pastille').textContent()) === '1',
+    'la pastille donne le nombre de commandes en cours');
+  await pg.locator('.topbar .btn-quiet').click();
+  await pg.waitForTimeout(300);
 
   console.log('\n== Statistiques ==');
   await pg.locator('.order').first().getByRole('button', { name: /Servi/ }).click();
@@ -162,8 +177,8 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
     await pg.goBack();
     await pg.getByRole('button', { name: /Nouvelle commande/ }).click();
     await pg.waitForTimeout(400);
-    await pg.screenshot({ path: `${dir}/roue.png` });
-    await pg.locator('.footer-bar .btn').click();
+    await pg.screenshot({ path: `${dir}/tables.png` });
+    await pg.locator('.touche', { hasText: /^22$/ }).click();
     await pg.locator('.meat', { hasText: 'Côte' }).first().click();
     await pg.waitForTimeout(300);
     await pg.screenshot({ path: `${dir}/cuissons.png` });

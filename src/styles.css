@@ -274,75 +274,77 @@ ul, ol { list-style: none; padding: 0; }
 .empty p { font-size: 14px; line-height: 1.55; max-width: 34ch; margin: 0 auto; }
 
 /* ============================================================
-   Roue de sélection de table
+   Pavé de sélection des tables
    ============================================================ */
 
-.wheel-screen {
-  flex: 1 1 auto;
-  min-height: 0;
+.zone { margin-bottom: 18px; }
+.zone:last-child { margin-bottom: 4px; }
+
+.zone-titre {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 18px;
-  padding: 14px;
-}
-.wheel-label { font-size: 14px; font-weight: 700; color: var(--ink-mute); letter-spacing: .3px; text-transform: uppercase; }
-
-/* Ces deux mesures pilotent la hauteur de la roue, celle des crans, les
-   espaceurs et la fenêtre de sélection : elles doivent rester solidaires,
-   sinon le cran retenu ne tombe plus dans le cadre. Elles sont posées sur le
-   conteneur pour que la roue et son cadre les partagent. */
-.wheel-wrap { position: relative; --wheel-h: 324px; --item-h: 58px; }
-
-.wheel {
-  position: relative;
-  width: min(320px, 82vw);
-  height: var(--wheel-h);
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
-  perspective: 780px;
-  perspective-origin: 50% 50%;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  /* Le dégradé doit laisser voir deux crans de part et d'autre du centre. */
-  mask-image: linear-gradient(180deg, transparent, #000 13%, #000 87%, transparent);
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 13%, #000 87%, transparent);
-  touch-action: pan-y;
-}
-.wheel::-webkit-scrollbar { display: none; }
-
-.wheel-pad { height: calc((var(--wheel-h) - var(--item-h)) / 2); flex: 0 0 auto; }
-
-.wheel-item {
-  height: var(--item-h);
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
-  display: grid;
-  place-items: center;
-  font-size: 30px;
+  gap: 8px;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: -.5px;
-  color: var(--ink-soft);
-  backface-visibility: hidden;
-  will-change: transform, opacity;
-  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: .9px;
+  color: var(--zone);
+  margin-bottom: 9px;
 }
-.wheel-item.on { color: var(--accent); }
+.zone-titre i {
+  width: 9px; height: 9px; border-radius: 3px;
+  background: var(--zone); flex: 0 0 auto;
+}
+.zone-titre::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--zone) 28%, transparent);
+}
 
-/* La fenêtre qui marque la valeur retenue */
+.pave {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
+  gap: 8px;
+}
 
-.wheel-frame {
+.touche {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  min-height: 58px;
+  border-radius: var(--r-md);
+  font-size: clamp(19px, 6vw, 26px);
+  font-weight: 800;
+  letter-spacing: -.6px;
+  color: var(--ink);
+  /* Teintée plutôt que remplie : vingt-neuf pavés en aplat saturé
+     fatigueraient l'œil, alors qu'une teinte suffit à dire la zone. */
+  background: color-mix(in srgb, var(--zone) 15%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--zone) 42%, transparent);
+  transition: transform .08s ease, background .12s ease;
+}
+.touche:active {
+  transform: scale(.94);
+  background: var(--zone);
+  color: #08121C;
+}
+.touche:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+/* Table déjà servie : la pastille dit combien de commandes y sont en cours. */
+.touche.occupee { box-shadow: inset 0 0 0 2px var(--zone); }
+.pastille {
   position: absolute;
-  left: 0; right: 0;
-  top: 50%;
-  height: var(--item-h);
-  z-index: 1;
-  transform: translateY(-50%);
-  border-top: 1.5px solid var(--line);
-  border-bottom: 1.5px solid var(--line);
-  background: linear-gradient(90deg, rgba(232,166,60,.06), rgba(232,166,60,.11), rgba(232,166,60,.06));
-  pointer-events: none;
+  top: -5px; right: -5px;
+  min-width: 21px; height: 21px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 21px;
+  letter-spacing: 0;
+  box-shadow: 0 0 0 2px var(--bg);
 }
 
 /* ============================================================
@@ -703,10 +705,10 @@ table.data td { text-align: right; font-weight: 700; color: var(--ink-soft); }
   .topbar .title { font-size: 17px; }
   .content { padding: 10px 14px; }
   .orders { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
-  .wheel-wrap { --wheel-h: 196px; --item-h: 44px; }
-  .wheel-item { font-size: 25px; }
-  .wheel-screen { gap: 10px; padding: 8px; }
   .meat { min-height: 60px; padding: 11px 12px; font-size: 16px; }
+  .zone { margin-bottom: 11px; }
+  .zone-titre { margin-bottom: 6px; }
+  .touche { aspect-ratio: auto; min-height: 46px; font-size: 19px; }
   .cuissons { grid-template-columns: repeat(4, 1fr); }
   .cuisson-btn { min-height: 66px; font-size: 15px; }
   .basket { max-height: 22dvh; }
