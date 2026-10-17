@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { SEUIL_ORANGE, SEUIL_ROUGE, TRUFFE, cuissonById, grilladeById } from '../config.js';
 import { formatChrono, useHorloge } from '../lib/temps.js';
 
@@ -7,13 +8,49 @@ function classeAge(minutes) {
   return '';
 }
 
-function Commande({ cmd, maintenant, onServir }) {
+const LONG_MS = 550;
+
+function Commande({ cmd, maintenant, onServir, onDemanderEffacement }) {
+  // Appui long : effacer une commande saisie par erreur. Un appui franc et
+  // maintenu, pour qu'une main posée sur l'écran ne déclenche rien.
+  const appui = useRef(null);
+  const [presse, setPresse] = useState(false);
+
+  const annulerAppui = () => {
+    if (!appui.current) return;
+    clearTimeout(appui.current.timer);
+    appui.current = null;
+    setPresse(false);
+  };
+  const debutAppui = (e) => {
+    if (e.target.closest('button')) return;   // le bouton « Servi » garde la main
+    appui.current = { x: e.clientX, y: e.clientY };
+    setPresse(true);
+    appui.current.timer = setTimeout(() => {
+      annulerAppui();
+      try { navigator.vibrate?.(30); } catch {}
+      onDemanderEffacement(cmd);
+    }, LONG_MS);
+  };
+  const bougeAppui = (e) => {
+    if (!appui.current) return;
+    if (Math.abs(e.clientX - appui.current.x) > 12 || Math.abs(e.clientY - appui.current.y) > 12) annulerAppui();
+  };
+
   const ecoule = maintenant - cmd.creeeA;
   const pieces = cmd.lignes.reduce((s, l) => s + l.qte, 0);
   const heure = new Date(cmd.creeeA).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <article className={`order ${classeAge(ecoule / 60000)}`}>
+    <article
+      className={`order ${classeAge(ecoule / 60000)} ${presse ? 'presse' : ''}`}
+      onPointerDown={debutAppui}
+      onPointerMove={bougeAppui}
+      onPointerUp={annulerAppui}
+      onPointerCancel={annulerAppui}
+      onPointerLeave={annulerAppui}
+      onContextMenu={(e) => e.preventDefault()}
+    >
       <div className="order-head">
         <h2 className="order-table">
           Table {cmd.table} <span>· {pieces} pièce{pieces > 1 ? 's' : ''} · {heure}</span>
@@ -88,9 +125,10 @@ function Anomalie({ etat }) {
   );
 }
 
-export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onServir, onStats }) {
+export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onServir, onEffacer, onStats, onHistorique }) {
   const maintenant = useHorloge(1000);
   const pieces = commandes.reduce((s, c) => s + c.lignes.reduce((n, l) => n + l.qte, 0), 0);
+  const [aEffacer, setAEffacer] = useState(null);
 
   return (
     <>
@@ -104,6 +142,12 @@ export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onS
           </span>
         </h1>
         <Partage etat={etatSync} />
+        <button className="btn btn-ghost btn-icon" type="button" onClick={onHistorique} aria-label="Historique du jour">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="2" />
+            <path d="M12 7.3V12l3.2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
         <button className="btn btn-ghost btn-icon" type="button" onClick={onStats} aria-label="Statistiques">
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <rect x="3" y="12" width="4.2" height="8" rx="1.4" fill="currentColor" />
@@ -147,12 +191,51 @@ export default function Accueil({ commandes, etatSync, onNouvelle, onDicter, onS
           ) : (
             <div className="orders">
               {commandes.map((cmd) => (
-                <Commande key={cmd.id} cmd={cmd} maintenant={maintenant} onServir={onServir} />
+                <Commande
+                  key={cmd.id}
+                  cmd={cmd}
+                  maintenant={maintenant}
+                  onServir={onServir}
+                  onDemanderEffacement={setAEffacer}
+                />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {aEffacer && (
+        <div
+          className="sheet-backdrop"
+          onClick={(e) => { if (e.target === e.currentTarget) setAEffacer(null); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Effacer la commande"
+        >
+          <div className="sheet">
+            <div className="grab" />
+            <h2>Effacer la commande ?</h2>
+            <p className="hint">
+              Table {aEffacer.table} · {aEffacer.lignes.reduce((s, l) => s + l.qte, 0)} pièce
+              {aEffacer.lignes.reduce((s, l) => s + l.qte, 0) > 1 ? 's' : ''}
+              {' — '}elle quittera le grill sur tous les téléphones.
+              Vous la retrouverez dans l’historique du jour.
+            </p>
+            <div className="sheet-actions">
+              <button className="btn btn-ghost btn-lg" type="button" onClick={() => setAEffacer(null)}>
+                Garder
+              </button>
+              <button
+                className="btn btn-danger btn-lg"
+                type="button"
+                onClick={() => { const c = aEffacer; setAEffacer(null); onEffacer(c.id); }}
+              >
+                Effacer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

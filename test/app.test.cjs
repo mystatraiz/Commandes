@@ -40,6 +40,9 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
     'les zones sont nommées dans l’ordre');
   const couleurs = await pg.locator('.zone').evaluateAll((n) => n.map((z) => z.style.getPropertyValue('--zone')));
   ok(new Set(couleurs).size === 3, 'une couleur distincte par zone');
+  const colTables = await pg.evaluate(() =>
+    getComputedStyle(document.querySelector('.pave')).gridTemplateColumns.split(' ').length);
+  ok(colTables === 4, `quatre tables par ligne (${colTables})`);
 
   // Tout doit se voir d'un coup : c'est l'intérêt du pavé face à la roue.
   const horsEcran = await pg.locator('.touche').evaluateAll((n) => {
@@ -49,8 +52,8 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   ok(horsEcran === 0, `toutes les tables tiennent à l’écran sans défiler (${horsEcran} hors champ)`);
 
   const premiere = await pg.locator('.touche').first().boundingBox();
-  ok(premiere.width >= 44 && premiere.height >= 44,
-    `les touches sont assez grandes pour le doigt (${Math.round(premiere.width)}×${Math.round(premiere.height)})`);
+  ok(premiere.width >= 72 && premiere.height >= 56,
+    `les touches sont larges (${Math.round(premiere.width)}×${Math.round(premiere.height)})`);
 
   console.log('\n== Choix des grillades ==');
   await pg.locator('.touche', { hasText: /^22$/ }).click();
@@ -183,6 +186,55 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
     'la pastille donne le nombre de commandes en cours');
   await pg.locator('.topbar .btn-quiet').click();
   await pg.waitForTimeout(300);
+
+  console.log('\n== Effacer une commande par appui long ==');
+  const avant = await pg.locator('.order').count();
+  const carte = pg.locator('.order').first();
+  const tableEffacee = (await carte.locator('.order-table').textContent()).match(/Table (\S+)/)[1];
+  const cadre = await carte.boundingBox();
+  await pg.mouse.move(cadre.x + cadre.width / 2, cadre.y + 24);
+  await pg.mouse.down();
+  await pg.waitForTimeout(750);
+  await pg.mouse.up();
+  ok(await pg.locator('.sheet-backdrop').count() === 1, 'l’appui long demande confirmation');
+  ok((await pg.locator('.sheet').textContent()).includes(tableEffacee), 'la confirmation rappelle la table');
+  await pg.getByRole('button', { name: 'Garder' }).click();
+  await pg.waitForTimeout(250);
+  ok(await pg.locator('.order').count() === avant, '« Garder » ne supprime rien');
+
+  // Un appui bref ne doit rien déclencher.
+  await carte.click({ position: { x: 60, y: 20 } });
+  await pg.waitForTimeout(250);
+  ok(await pg.locator('.sheet-backdrop').count() === 0, 'un appui bref ne déclenche rien');
+
+  await pg.mouse.move(cadre.x + cadre.width / 2, cadre.y + 24);
+  await pg.mouse.down();
+  await pg.waitForTimeout(750);
+  await pg.mouse.up();
+  await pg.getByRole('button', { name: 'Effacer' }).click();
+  await pg.waitForTimeout(400);
+  ok(await pg.locator('.order').count() === avant - 1, 'la commande quitte le grill');
+
+  console.log('\n== Historique du jour ==');
+  await pg.getByRole('button', { name: 'Historique du jour' }).click();
+  await pg.waitForTimeout(500);
+  ok((await pg.locator('.topbar .title').textContent()).includes('Historique'), 'l’écran s’ouvre');
+  const etats = await pg.locator('.histo-etat').allTextContents();
+  ok(etats.some((e) => e.includes('Effacée')), 'la commande effacée y figure');
+  ok(etats.some((e) => e.includes('Servie')), 'les commandes servies aussi');
+
+  console.log('\n== Restaurer une commande ==');
+  const carteHisto = pg.locator('.histo-item', { hasText: 'Effacée' }).first();
+  ok((await carteHisto.textContent()).includes(tableEffacee), 'la bonne table est retrouvée');
+  await carteHisto.getByRole('button', { name: /Remettre en cours/ }).click();
+  await pg.waitForTimeout(500);
+  ok(!(await pg.locator('.histo-item').allTextContents()).some((t) => t.includes('Effacée')),
+    'elle disparaît de l’historique');
+  await pg.locator('.topbar .btn-quiet').click();
+  await pg.waitForTimeout(400);
+  ok(await pg.locator('.order').count() === avant, 'elle est de retour sur le grill');
+  ok((await pg.locator('.order-table').allTextContents()).some((t) => t.includes(tableEffacee)),
+    'avec le bon numéro de table');
 
   console.log('\n== Statistiques ==');
   await pg.locator('.order').first().getByRole('button', { name: /Servi/ }).click();

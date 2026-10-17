@@ -277,7 +277,7 @@ ul, ol { list-style: none; padding: 0; }
    Pavé de sélection des tables
    ============================================================ */
 
-.zone { margin-bottom: 18px; }
+.zone { margin-bottom: 15px; }
 .zone:last-child { margin-bottom: 4px; }
 
 .zone-titre {
@@ -289,7 +289,7 @@ ul, ol { list-style: none; padding: 0; }
   text-transform: uppercase;
   letter-spacing: .9px;
   color: var(--zone);
-  margin-bottom: 9px;
+  margin-bottom: 8px;
 }
 .zone-titre i {
   width: 9px; height: 9px; border-radius: 3px;
@@ -304,14 +304,20 @@ ul, ol { list-style: none; padding: 0; }
 
 .pave {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
+  /* Quatre par ligne : des touches nettement plus larges, et les trois zones
+     tiennent encore à l'écran sans défiler. */
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 
 .touche {
   position: relative;
-  aspect-ratio: 1 / 1;
-  min-height: 58px;
+  /* Pas d'aspect-ratio : combiné à un plafond de hauteur, il rétrécissait
+     aussi la largeur et la touche restait étroite. La largeur suit donc la
+     colonne, et seule la hauteur s'adapte à l'écran — huit rangées doivent
+     tenir sur les téléphones les plus courts sans rester riquiqui sur les
+     plus grands. */
+  height: clamp(46px, 8.4dvh, 82px);
   border-radius: var(--r-md);
   font-size: clamp(19px, 6vw, 26px);
   font-weight: 800;
@@ -712,13 +718,22 @@ table.data td { text-align: right; font-weight: 700; color: var(--ink-soft); }
   .meat { min-height: 60px; padding: 11px 12px; font-size: 16px; }
   .zone { margin-bottom: 11px; }
   .zone-titre { margin-bottom: 6px; }
-  .touche { aspect-ratio: auto; min-height: 46px; font-size: 19px; }
+  .pave { grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); }
+  .touche { aspect-ratio: auto; max-height: none; min-height: 46px; font-size: 19px; }
   .cuissons { grid-template-columns: repeat(4, 1fr); }
   .cuisson-btn { min-height: 66px; font-size: 15px; }
   .basket { max-height: 22dvh; }
   .footer-bar { padding: 8px 14px calc(8px + var(--sab)); }
   .btn-lg { min-height: 48px; }
   .hour .zone { height: 76px; }
+}
+
+/* Téléphones courts : on resserre l'habillage des zones plutôt que de
+   rapetisser les touches, qui sont justement ce qu'on vient d'agrandir. */
+@media (orientation: portrait) and (max-height: 700px) {
+  .zone { margin-bottom: 9px; }
+  .zone-titre { margin-bottom: 5px; font-size: 11px; }
+  .content { padding-top: 10px; }
 }
 
 /* Grands écrans : on centre plutôt que d'étirer à l'infini */
@@ -966,3 +981,65 @@ table.data td { text-align: right; font-weight: 700; color: var(--ink-soft); }
   letter-spacing: .6px;
   vertical-align: 1px;
 }
+
+/* ============================================================
+   Effacement et historique du jour
+   ============================================================ */
+
+.order.presse { transform: scale(.985); filter: brightness(1.15); }
+.order { transition: transform .12s ease, filter .12s ease; }
+
+.sheet-actions { display: flex; gap: 9px; margin-top: 4px; }
+.sheet-actions .btn { flex: 1; }
+.btn-danger { background: var(--hot); color: #fff; }
+
+.histo { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 10px; }
+.histo-item {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: inset 0 0 0 1px var(--line);
+  border-left: 5px solid var(--ok);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.histo-item.annulee { border-left-color: var(--hot); opacity: .88; }
+.histo-tete { display: flex; align-items: center; gap: 10px; }
+.histo-table { font-size: 18px; font-weight: 800; flex: 1; min-width: 0; }
+.histo-etat {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.histo-etat.servie { background: rgba(53,179,126,.16); color: var(--ok); }
+.histo-etat.annulee { background: rgba(229,72,77,.16); color: #FF8E91; }
+.histo-detail { font-size: 12.5px; color: var(--ink-mute); line-height: 1.45; }
+.histo-lignes { display: flex; flex-wrap: wrap; gap: 6px; }
+.histo-ligne {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+.histo-ligne b { color: var(--accent); }
+.histo-ligne em {
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.histo-ligne i { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 auto; }
+.histo-item .btn { min-height: 42px; font-size: 14px; }

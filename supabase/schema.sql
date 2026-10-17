@@ -15,7 +15,12 @@ create table if not exists public.grill_commandes (
   servie_a   timestamptz,
   statut     text        not null default 'en_cours',
   maj_a      timestamptz not null default now(),  -- arbitre les modifications concurrentes
-  constraint grill_statut_valide check (statut in ('en_cours', 'servie'))
+  -- « annulee » : commande effacée par erreur de frappe. Conservée plutôt que
+  -- supprimée, pour deux raisons : elle reste restaurable depuis l'historique
+  -- du jour, et une suppression de ligne ne se propagerait pas aux téléphones
+  -- hors ligne, alors qu'un changement de statut suit la synchronisation
+  -- normale.
+  constraint grill_statut_valide check (statut in ('en_cours', 'servie', 'annulee'))
 );
 
 -- Le tri de l'accueil et la synchronisation incrémentale passent par ces deux index.
