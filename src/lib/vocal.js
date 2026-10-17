@@ -9,7 +9,7 @@
    Le résultat n'est jamais envoyé tel quel : il pré-remplit l'écran de saisie,
    que le service relit et corrige avant d'envoyer. */
 
-import { CUISSONS, GRILLADES, TABLES } from '../config.js';
+import { CUISSONS, GRILLADES, TABLES, TRUFFE } from '../config.js';
 
 /** Minuscules, sans accents, ponctuation en espaces. */
 export function normaliser(texte) {
@@ -49,6 +49,7 @@ function indexer(entrees) {
 
 const IDX_GRILLADES = indexer(GRILLADES);
 const IDX_CUISSONS = indexer(CUISSONS);
+const IDX_TRUFFE = indexer([{ id: 'truffe', nom: TRUFFE.nom, dit: TRUFFE.dit }]);
 
 /* Le « s » du pluriel est ignoré des deux côtés : la configuration n'a pas à
    lister « côte » et « côtes », et une dictée au pluriel reste reconnue. */
@@ -135,8 +136,25 @@ export function analyser(texte) {
   // quantité d'un morceau de numéro de table.
   const grillades = reperer(mots, IDX_GRILLADES);
   const cuissons = reperer(mots, IDX_CUISSONS);
+  const truffes = reperer(mots, IDX_TRUFFE);
   const debutsGrillades = new Set(grillades.map((g) => g.debut));
   const { table, fin: finTable } = trouverTable(mots, debutsGrillades);
+
+  // Un qualificatif déjà attribué à une pièce ne peut pas resservir pour la
+  // suivante. Sans cette mémoire, « deux filets bleus et une côte » donnait
+  // aussi le bleu à la côte — une cuisson que personne n'avait demandée.
+  const cuissonsPrises = new Set();
+  const truffesPrises = new Set();
+
+  /** Qualificatif le plus proche encore libre : celui qui suit, sinon celui qui précède. */
+  const rattacher = (marques, prises, ici, borne, plancher) => {
+    const apres = marques.find((m) => !prises.has(m.debut) && m.debut > ici.fin && m.debut < borne);
+    if (apres) { prises.add(apres.debut); return apres; }
+    const avant = [...marques].reverse()
+      .find((m) => !prises.has(m.debut) && m.fin < ici.debut && m.fin > plancher);
+    if (avant) { prises.add(avant.debut); return avant; }
+    return null;
+  };
 
   const lignes = [];
   for (let g = 0; g < grillades.length; g++) {
@@ -154,26 +172,26 @@ export function analyser(texte) {
       if (i < ici.debut - 3) break;   // trop loin, ce n'est plus sa quantité
     }
 
-    // Cuisson : la première entre cette grillade et la suivante, sinon celle
-    // qui la précède immédiatement (« saignant, une côte »).
-    let cuisson = null;
+    // Cuisson : la plus proche encore libre, après la pièce de préférence,
+    // sinon avant (« saignant, une côte »).
     const borne = suivante ? suivante.debut : mots.length;
-    const apres = cuissons.find((c) => c.debut > ici.fin && c.debut < borne);
-    if (apres) cuisson = apres.id;
-    else {
-      const avant = [...cuissons].reverse()
-        .find((c) => c.fin < ici.debut && c.fin > (g > 0 ? grillades[g - 1].fin : finTable));
-      if (avant) cuisson = avant.id;
-    }
+    const plancher = g > 0 ? grillades[g - 1].fin : finTable;
+    const marqueCuisson = rattacher(cuissons, cuissonsPrises, ici, borne, plancher);
+    let cuisson = marqueCuisson ? marqueCuisson.id : null;
     if (def?.sansCuisson) cuisson = null;
 
+    // La truffe se rattache de la même façon : c'est un supplément à la pièce.
+    const truffe = Boolean(rattacher(truffes, truffesPrises, ici, borne, plancher));
+
     const ligne = { grillade: ici.id, cuisson, qte };
+    if (truffe) ligne.truffe = true;
     // Signalée plutôt que devinée : une cuisson inventée enverrait la mauvaise
     // pièce au grill. L'interface la fera compléter d'un appui.
     if (!def?.sansCuisson && !cuisson) ligne.incomplete = true;
 
     // Deux fois la même pièce et la même cuisson se cumulent.
-    const jumelle = lignes.find((l) => l.grillade === ligne.grillade && l.cuisson === ligne.cuisson);
+    const jumelle = lignes.find((l) => l.grillade === ligne.grillade && l.cuisson === ligne.cuisson
+      && Boolean(l.truffe) === Boolean(ligne.truffe));
     if (jumelle) jumelle.qte = Math.min(99, jumelle.qte + ligne.qte);
     else lignes.push(ligne);
   }
@@ -181,7 +199,7 @@ export function analyser(texte) {
   // Ce qui n'a été reconnu ni comme table, ni comme pièce, ni comme cuisson :
   // utile pour dire au service ce qui a été laissé de côté.
   const reconnus = new Set(['table', 'tables', 'et', 'de', 'la', 'le', 'les', 'un', 'une', 'avec', 'plus', 'pour']);
-  for (const t of [...grillades, ...cuissons]) for (let i = t.debut; i <= t.fin; i++) reconnus.add(String(i));
+  for (const t of [...grillades, ...cuissons, ...truffes]) for (let i = t.debut; i <= t.fin; i++) reconnus.add(String(i));
   const motsIgnores = mots.filter((m, i) =>
     !reconnus.has(String(i)) && !reconnus.has(m) && quantiteDuMot(m) === null && i !== finTable);
 

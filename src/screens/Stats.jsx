@@ -246,6 +246,8 @@ export default function Stats({ commandesEnCours, onRetour }) {
                   cle="Temps de service"
                   valeur={s.nbServies ? formatDuree(s.dureeMoyenne) : '—'}
                 />
+                {/* Affichée seulement si le supplément a été servi. */}
+                {s.truffes > 0 && <Tuile cle="Truffes" valeur={nf.format(s.truffes)} unite="pièces" />}
               </div>
 
               {vueTableau ? (

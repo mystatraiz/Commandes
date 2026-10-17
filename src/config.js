@@ -57,28 +57,52 @@ export const CUISSONS = [
     dit: ['bien cuit', 'bien cuite', 'biencuit', 'cuit a coeur'] },
 ];
 
-// La carte du grill. `sansCuisson` saute l'écran des cuissons : la pièce est
-// ajoutée directement à la commande.
+// Familles de viandes, repérées par le liseré de couleur du bouton.
+//
+// Les quatre teintes restent distinguables sous les deux daltonismes les plus
+// courants (pire écart 10, pour un seuil usuel de 8) et ressortent toutes du
+// fond des touches. Le liseré reste malgré tout un repère secondaire : le nom
+// de la pièce est toujours écrit, la couleur ne porte jamais seule
+// l'information.
+export const FAMILLES = [
+  { id: 'rouge', nom: 'Bœuf',     couleur: '#E54D42' },
+  { id: 'jaune', nom: 'Pièces d\u2019exception', couleur: '#EBD229' },
+  { id: 'rose',  nom: 'Agneau',   couleur: '#D75EB4' },
+  { id: 'vert',  nom: 'Volaille', couleur: '#54BF5C' },
+];
+
+export const familleById = (id) => FAMILLES.find((f) => f.id === id) || null;
+
+// Supplément proposé à la commande, coché au moment de choisir la cuisson.
+export const TRUFFE = {
+  nom: 'Truffe',
+  etiquette: 'TRUFFE',
+  dit: ['aux truffes', 'avec truffe', 'truffee', 'truffe'],
+};
+
+// La carte du grill, groupée par famille pour que les liserés se suivent.
+// `sansCuisson` saute l'écran des cuissons : la pièce est ajoutée directement.
 //
 // `dit` : ce que la dictée peut renvoyer pour cette pièce. Ces listes sont des
 // suppositions à partir de vos abréviations — corrigez-les avec vos mots à
 // vous, c'est ce qui déterminera la justesse de la reconnaissance vocale.
-// Une variante plus longue est reconnue avant une plus courte, donc
-// « tomahawk wagyu » l'emporte sur « tomahawk ».
+// Les accents, la casse et le « s » du pluriel sont ignorés. Une variante plus
+// longue est reconnue avant une plus courte, donc « tomahawk wagyu »
+// l'emporte sur « tomahawk ».
 export const GRILLADES = [
-  { id: 'etc',    nom: 'ETC',     dit: ['entrecote', 'entre cote', 'etc'] },
-  { id: 'cote',   nom: 'Côte',    dit: ['cote de boeuf', 'cote'] },
-  { id: 'bavette',nom: 'Bavette', dit: ['bavette'] },
-  { id: 'tbone',  nom: 'T-Bone',  dit: ['t bone', 'tbone', 'te bone', 'ti bone'] },
-  { id: 'tmhk',   nom: 'Tmhk',    dit: ['tomahawk', 'tomawak', 'tomahak'] },
-  { id: 'noix',   nom: 'Noix',    dit: ['noix'] },
-  { id: 'tmhkw',  nom: 'TMHKW',   dit: ['tomahawk wagyu', 'tomawak wagyu', 'wagyu'] },
-  { id: 'ribcap', nom: 'RibCap',  dit: ['rib cap', 'ribcap', 'ribe cap'] },
-  { id: 'chatb',  nom: 'ChatB',   dit: ['chateaubriand', 'chateau briand', 'chato'] },
-  { id: 'agneau', nom: 'Agneau',  dit: ['agneau', 'agneaux'] },
-  { id: 'magret', nom: 'Magret',  dit: ['magret de canard', 'magret'] },
-  { id: 'poulet', nom: 'Poulet', sansCuisson: true, dit: ['poulet'] },
-  { id: 'gigot',  nom: 'Gigot',  dit: ["gigot d agneau", 'gigot'] },
+  { id: 'etc',    nom: 'ETC',     famille: 'rouge', dit: ['entrecote', 'entre cote', 'etc'] },
+  { id: 'cote',   nom: 'Côte',    famille: 'rouge', dit: ['cote de boeuf', 'cote'] },
+  { id: 'bavette',nom: 'Bavette', famille: 'rouge', dit: ['bavette'] },
+  { id: 'tbone',  nom: 'T-Bone',  famille: 'rouge', dit: ['t bone', 'tbone', 'te bone', 'ti bone'] },
+  { id: 'tmhk',   nom: 'Tmhk',    famille: 'rouge', dit: ['tomahawk', 'tomawak', 'tomahak'] },
+  { id: 'filet',  nom: 'Filet',   famille: 'rouge', dit: ['filet de boeuf', 'filet'] },
+  { id: 'noix',   nom: 'Noix',    famille: 'jaune', dit: ['noix'] },
+  { id: 'tmhkw',  nom: 'TMHKW',   famille: 'jaune', dit: ['tomahawk wagyu', 'tomawak wagyu', 'wagyu'] },
+  { id: 'chatb',  nom: 'ChatB',   famille: 'jaune', dit: ['chateaubriand', 'chateau briand', 'chato'] },
+  { id: 'agneau', nom: 'Agneau',  famille: 'rose',  dit: ['agneau', 'agneaux'] },
+  { id: 'gigot',  nom: 'Gigot',   famille: 'rose',  dit: ['gigot d agneau', 'gigot'] },
+  { id: 'poulet', nom: 'Poulet',  famille: 'vert',  sansCuisson: true, dit: ['poulet'] },
+  { id: 'magret', nom: 'Magret',  famille: 'vert',  dit: ['magret de canard', 'magret'] },
 ];
 
 // Minuteur des commandes en cours (en minutes).

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { CUISSONS, GRILLADES, cuissonById, grilladeById } from '../config.js';
+import { CUISSONS, GRILLADES, TRUFFE, cuissonById, familleById, grilladeById } from '../config.js';
 
-/** Panneau des cuissons : quatre couleurs, une par degré de cuisson. */
+/** Panneau des cuissons : quatre couleurs, une par degré de cuisson.
+    La truffe se coche avant : c'est un supplément à la pièce, pas une cuisson. */
 function PanneauCuissons({ grillade, onChoisir, onFermer }) {
+  const [truffe, setTruffe] = useState(false);
+
   // Échap ferme le panneau ; utile au clavier et sur les bornes.
   useEffect(() => {
     const surTouche = (e) => { if (e.key === 'Escape') onFermer(); };
@@ -21,6 +24,17 @@ function PanneauCuissons({ grillade, onChoisir, onFermer }) {
       <div className="sheet">
         <div className="grab" />
         <h2>{grillade.nom}</h2>
+
+        <label className="truffe-case">
+          <input
+            type="checkbox"
+            checked={truffe}
+            onChange={(e) => setTruffe(e.target.checked)}
+          />
+          <span className="coche" aria-hidden="true" />
+          {TRUFFE.nom}
+        </label>
+
         <p className="hint">Choisissez la cuisson</p>
         <div className="cuissons">
           {CUISSONS.map((c) => (
@@ -29,7 +43,7 @@ function PanneauCuissons({ grillade, onChoisir, onFermer }) {
               className="cuisson-btn"
               type="button"
               style={{ background: c.couleur, color: c.encre }}
-              onClick={() => onChoisir(c.id)}
+              onClick={() => onChoisir(c.id, truffe)}
             >
               <span className="dot" aria-hidden="true" />
               {c.nom}
@@ -56,8 +70,8 @@ export default function Saisie({ brouillon, onAjouter, onRetirer, onEnvoyer, onC
     else setEnAttente(g);
   };
 
-  const choisirCuisson = (cuissonId) => {
-    onAjouter(enAttente.id, cuissonId);
+  const choisirCuisson = (cuissonId, truffe) => {
+    onAjouter(enAttente.id, cuissonId, truffe);
     setEnAttente(null);   // retour immédiat à la liste des grillades
   };
 
@@ -90,6 +104,8 @@ export default function Saisie({ brouillon, onAjouter, onRetirer, onEnvoyer, onC
                 key={g.id}
                 className={`meat ${parGrillade[g.id] ? 'picked' : ''}`}
                 type="button"
+                style={{ '--famille': familleById(g.famille)?.couleur || 'var(--line)' }}
+                aria-label={`${g.nom}${familleById(g.famille) ? ` — ${familleById(g.famille).nom}` : ''}`}
                 onClick={() => choisirGrillade(g)}
               >
                 {g.nom}
@@ -116,12 +132,13 @@ export default function Saisie({ brouillon, onAjouter, onRetirer, onEnvoyer, onC
                   <i className="pill" style={{ background: c ? c.couleur : 'var(--ink-mute)' }} aria-hidden="true" />
                   {l.qte > 1 && <span className="n">{l.qte}×</span>}
                   {g ? g.nom : l.grillade}
+                  {l.truffe && <b className="truffe-tag">{TRUFFE.etiquette}</b>}
                   {c && ` · ${c.nom}`}
                   <button
                     className="x"
                     type="button"
                     onClick={() => onRetirer(i)}
-                    aria-label={`Retirer une pièce : ${g ? g.nom : l.grillade}${c ? ` ${c.nom}` : ''}`}
+                    aria-label={`Retirer une pièce : ${g ? g.nom : l.grillade}${l.truffe ? ' truffe' : ''}${c ? ` ${c.nom}` : ''}`}
                   >
                     ×
                   </button>

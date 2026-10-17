@@ -161,7 +161,8 @@ export default function App() {
   const reprendreDictee = useCallback((resultat) => {
     setBrouillon({
       table: resultat.table,
-      lignes: resultat.lignes.map(({ grillade, cuisson, qte }) => ({ grillade, cuisson, qte })),
+      lignes: resultat.lignes.map(({ grillade, cuisson, qte, truffe }) =>
+        truffe ? { grillade, cuisson, qte, truffe: true } : { grillade, cuisson, qte }),
     });
     // L'écran de dictée cède sa place au pavé, puis la saisie s'empile
     // par-dessus : revenir en arrière ramène au choix de table en gardant la
@@ -174,12 +175,20 @@ export default function App() {
     });
   }, []);
 
-  /** Ajoute une pièce ; deux fois la même viande et la même cuisson se cumulent. */
-  const ajouter = useCallback((grillade, cuisson) => {
+  /** Ajoute une pièce. Deux pièces ne se cumulent que si elles sont
+      identiques en tout — la truffe fait partie de cette identité, sinon une
+      côte truffée disparaîtrait dans le compte d'une côte ordinaire. */
+  const ajouter = useCallback((grillade, cuisson, truffe = false) => {
     vibrer(10);
     setBrouillon((b) => {
-      const i = b.lignes.findIndex((l) => l.grillade === grillade && l.cuisson === cuisson);
-      if (i === -1) return { ...b, lignes: [...b.lignes, { grillade, cuisson, qte: 1 }] };
+      const i = b.lignes.findIndex(
+        (l) => l.grillade === grillade && l.cuisson === cuisson && Boolean(l.truffe) === Boolean(truffe),
+      );
+      if (i === -1) {
+        const ligne = { grillade, cuisson, qte: 1 };
+        if (truffe) ligne.truffe = true;
+        return { ...b, lignes: [...b.lignes, ligne] };
+      }
       const lignes = b.lignes.slice();
       lignes[i] = { ...lignes[i], qte: lignes[i].qte + 1 };
       return { ...b, lignes };

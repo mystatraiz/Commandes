@@ -362,7 +362,8 @@ ul, ol { list-style: none; padding: 0; }
   padding: 14px 13px;
   border-radius: var(--r-md);
   background: var(--surface);
-  box-shadow: var(--shadow-1), inset 0 0 0 1px var(--line);
+  /* Liseré de famille : repère secondaire, le nom reste la source sûre. */
+  box-shadow: var(--shadow-1), inset 0 0 0 2px var(--famille, var(--line));
   font-size: 17px;
   font-weight: 750;
   letter-spacing: -.2px;
@@ -374,8 +375,11 @@ ul, ol { list-style: none; padding: 0; }
   text-align: left;
   transition: transform .09s ease, background .15s ease;
 }
-.meat:active { transform: scale(.965); background: var(--surface-2); }
-.meat.picked { box-shadow: var(--shadow-1), inset 0 0 0 1.5px var(--accent); }
+.meat:active { transform: scale(.965); background: color-mix(in srgb, var(--famille, var(--line)) 22%, var(--surface)); }
+.meat.picked {
+  background: color-mix(in srgb, var(--famille, var(--line)) 13%, var(--surface));
+  box-shadow: var(--shadow-1), inset 0 0 0 2.5px var(--famille, var(--accent));
+}
 .meat .count {
   position: absolute;
   top: 8px; right: 8px;
@@ -886,4 +890,79 @@ table.data td { text-align: right; font-weight: 700; color: var(--ink-soft); }
   .onde { height: 40px; margin-bottom: 10px }
   .dit { font-size: 16px; min-height: 2em }
   .relu { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) }
+}
+
+/* ============================================================
+   Truffe — supplément coché à la pièce
+   ============================================================ */
+
+.truffe-case {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap);
+  padding: 9px 13px;
+  margin-bottom: 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 16px;
+  font-weight: 750;
+  cursor: pointer;
+  user-select: none;
+}
+.truffe-case input { position: absolute; opacity: 0; width: 0; height: 0; }
+.truffe-case .coche {
+  width: 24px; height: 24px;
+  border-radius: 7px;
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 2px var(--ink-mute);
+  flex: 0 0 auto;
+  position: relative;
+  transition: background .12s ease, box-shadow .12s ease;
+}
+.truffe-case .coche::after {
+  content: '';
+  position: absolute;
+  left: 8px; top: 4px;
+  width: 6px; height: 11px;
+  border: solid var(--accent-ink);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform .14s cubic-bezier(.2,.9,.3,1.4);
+}
+.truffe-case input:checked + .coche {
+  background: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.truffe-case input:checked + .coche::after { transform: rotate(45deg) scale(1); }
+.truffe-case input:focus-visible + .coche { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Variante tenue dans une ligne de relecture */
+.truffe-case.compacte {
+  min-height: 34px;
+  padding: 4px 9px;
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  flex: 0 0 auto;
+}
+.truffe-case.compacte .coche { width: 19px; height: 19px; border-radius: 6px; }
+.truffe-case.compacte .coche::after { left: 6px; top: 3px; width: 5px; height: 9px; border-width: 0 2px 2px 0; }
+
+/* Étiquette sur une pièce déjà commandée */
+.truffe-tag {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  vertical-align: 1px;
 }

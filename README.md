@@ -31,9 +31,17 @@ nombre, ce qui permet de repérer une erreur de numéro avant d'aller plus loin.
 Les vingt-neuf tables tiennent à l'écran sans défiler, en portrait comme en
 paysage ; un test le vérifie à chaque exécution de la suite.
 
-**Étape 2 — les grillades.** Les pièces en deux colonnes. Un appui ouvre le
-choix de la cuisson, quatre grandes touches de couleur ; l'appui sur la cuisson
-ramène aussitôt à la liste des grillades, et on enchaîne. Chaque bouton porte
+**Étape 2 — les grillades.** Les pièces en deux colonnes, chacune cerclée du
+liseré de sa famille : rouge pour le bœuf, jaune pour les pièces d'exception,
+rose pour l'agneau, vert pour la volaille. Un appui ouvre le choix de la
+cuisson, quatre grandes touches de couleur ; l'appui sur la cuisson ramène
+aussitôt à la liste des grillades, et on enchaîne.
+
+Le panneau porte aussi une case **Truffe**, à cocher avant de choisir la
+cuisson. Une pièce truffée s'affiche alors avec l'étiquette `TRUFFE` partout
+où elle apparaît, et compte comme une ligne distincte de la même pièce sans
+truffe — sinon le supplément se perdrait dans le total. Le nombre de truffes
+servies apparaît dans les statistiques dès qu'il y en a eu. Chaque bouton porte
 une pastille avec le nombre de pièces déjà commandées. Le récapitulatif s'écrit
 en bas au fur et à mesure ; le `×` d'une ligne retire une pièce.
 
@@ -78,6 +86,9 @@ renvoyer pour elle.
 ```js
 { id: 'tmhk', nom: 'Tmhk', dit: ['tomahawk', 'tomawak', 'tomahak'] },
 ```
+
+La truffe se dicte aussi : « une côte saignante avec truffe », « deux filets
+bleus truffés ». Ses mots-clés se règlent dans la constante `TRUFFE`.
 
 Les listes livrées sont des **suppositions** à partir de vos abréviations —
 mettez-y vos mots à vous, ceux que l'équipe emploie réellement. Les accents, la
@@ -253,8 +264,22 @@ export const SEUIL_ROUGE  = 15;                // minutes avant le rouge
 export const RETENTION_JOURS = 365;            // durée de l'historique
 ```
 
+Chaque pièce porte une `famille`, qui détermine la couleur de son liseré :
+
+```js
+{ id: 'filet', nom: 'Filet', famille: 'rouge', dit: ['filet de boeuf', 'filet'] },
+```
+
+Les familles et leurs couleurs sont définies juste au-dessus, dans `FAMILLES`.
+Les quatre teintes restent distinguables sous les deux daltonismes les plus
+courants ; gardez cet écart si vous les changez. Le liseré n'est de toute façon
+qu'un repère secondaire — le nom de la pièce est toujours écrit, la couleur ne
+porte jamais seule l'information.
+
 Pour qu'une pièce saute l'écran des cuissons, lui ajouter `sansCuisson: true` —
-c'est ce qui est fait pour le poulet.
+c'est ce qui est fait pour le poulet. **Conséquence à connaître : le poulet,
+ajouté d'un seul appui, ne passe pas par la case Truffe.** Si vous servez du
+poulet truffé, retirez-lui `sansCuisson` et il repassera par le panneau.
 
 Le plan de salle est décrit par zone, et c'est de là que tout découle : l'ordre
 du pavé, les couleurs, et la liste des tables que la dictée sait reconnaître.
