@@ -148,7 +148,14 @@ export function lireBrouillon() {
   try {
     const x = JSON.parse(localStorage.getItem(BROUILLON) || 'null');
     if (!x || typeof x !== 'object') return null;
-    return { table: x.table || null, lignes: Array.isArray(x.lignes) ? x.lignes : [] };
+    // `id` n'est présent que si l'on corrige une commande déjà envoyée : une
+    // correction interrompue doit reprendre sur la bonne commande, pas en
+    // créer une seconde.
+    return {
+      id: x.id || null,
+      table: x.table || null,
+      lignes: Array.isArray(x.lignes) ? x.lignes : [],
+    };
   } catch {
     return null;
   }

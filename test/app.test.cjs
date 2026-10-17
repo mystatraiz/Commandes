@@ -196,8 +196,10 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   await pg.mouse.down();
   await pg.waitForTimeout(750);
   await pg.mouse.up();
-  ok(await pg.locator('.sheet-backdrop').count() === 1, 'l’appui long demande confirmation');
-  ok((await pg.locator('.sheet').textContent()).includes(tableEffacee), 'la confirmation rappelle la table');
+  ok(await pg.locator('.sheet-backdrop').count() === 1, 'l’appui long ouvre les choix');
+  ok((await pg.locator('.sheet').textContent()).includes(tableEffacee), 'la feuille rappelle la table');
+  ok(await pg.getByRole('button', { name: /Modifier la commande/ }).isVisible(), 'Modifier est proposé');
+  ok(await pg.getByRole('button', { name: 'Effacer' }).isVisible(), 'Effacer aussi');
   await pg.getByRole('button', { name: 'Garder' }).click();
   await pg.waitForTimeout(250);
   ok(await pg.locator('.order').count() === avant, '« Garder » ne supprime rien');
@@ -214,6 +216,72 @@ const ok = (c, m) => { console.log((c ? '  OK   ' : '  ÉCHEC ') + m); if (!c) f
   await pg.getByRole('button', { name: 'Effacer' }).click();
   await pg.waitForTimeout(400);
   ok(await pg.locator('.order').count() === avant - 1, 'la commande quitte le grill');
+
+  console.log('\n== Modifier une commande existante ==');
+  const cible = pg.locator('.order').first();
+  const tableMod = (await cible.locator('.order-table').textContent()).match(/Table (\S+)/)[1];
+  const lignesAvant = await cible.locator('.order-line').count();
+  const chronoAvant = await cible.locator('.chrono').textContent();
+  const nbAvant = await pg.locator('.order').count();
+  const cadreMod = await cible.boundingBox();
+
+  const appuiLong = async (box) => {
+    await pg.mouse.move(box.x + box.width / 2, box.y + 24);
+    await pg.mouse.down();
+    await pg.waitForTimeout(750);
+    await pg.mouse.up();
+  };
+  await appuiLong(cadreMod);
+  await pg.getByRole('button', { name: /Modifier la commande/ }).click();
+  await pg.waitForTimeout(400);
+  ok((await pg.locator('.topbar .title').textContent()).includes(`Table ${tableMod}`), 'la table est reprise');
+  ok((await pg.locator('.topbar .sub').textContent()).includes('Correction'), 'l’écran annonce une correction');
+  ok(await pg.locator('.chip').count() === lignesAvant, 'les pièces déjà commandées sont reprises');
+  ok((await pg.locator('.footer-bar .btn').textContent()).includes('Enregistrer'),
+    'le bouton enregistre au lieu d’envoyer');
+
+  // On ajoute une pièce et on enregistre.
+  await pg.locator('.meat', { hasText: 'Bavette' }).first().click();
+  await pg.locator('.cuisson-btn', { hasText: 'Bleu' }).click();
+  await pg.waitForTimeout(200);
+  await pg.locator('.footer-bar .btn').click();
+  await pg.waitForTimeout(500);
+
+  ok(await pg.locator('.order').count() === nbAvant, 'aucune commande n’a été créée en double');
+  const modifiee = pg.locator('.order', { hasText: `Table ${tableMod}` }).first();
+  ok(await modifiee.locator('.order-line').count() === lignesAvant + 1, 'la pièce ajoutée apparaît');
+  ok((await modifiee.locator('.order-line').last().textContent()).includes('Bavette'), 'avec le bon contenu');
+
+  // Le point qui compte : corriger ne doit pas remettre le chronomètre à zéro.
+  const chronoApres = await modifiee.locator('.chrono').textContent();
+  const sec = (t) => { const m = t.match(/(\d+)′(\d+)/); return m ? +m[1] * 60 + +m[2] : -1; };
+  ok(sec(chronoApres) >= sec(chronoAvant),
+    `le chronomètre poursuit (${chronoAvant} → ${chronoApres})`);
+
+  // Retirer une pièce fonctionne aussi.
+  await appuiLong(await modifiee.boundingBox());
+  await pg.getByRole('button', { name: /Modifier la commande/ }).click();
+  await pg.waitForTimeout(400);
+  await pg.locator('.chip', { hasText: 'Bavette' }).locator('.x').click();
+  await pg.waitForTimeout(200);
+  await pg.locator('.footer-bar .btn').click();
+  await pg.waitForTimeout(500);
+  ok(await pg.locator('.order', { hasText: `Table ${tableMod}` }).first().locator('.order-line').count() === lignesAvant,
+    'la pièce retirée disparaît de la commande');
+
+  // Abandonner une correction laisse la commande intacte.
+  await appuiLong(await pg.locator('.order', { hasText: `Table ${tableMod}` }).first().boundingBox());
+  await pg.getByRole('button', { name: /Modifier la commande/ }).click();
+  await pg.waitForTimeout(400);
+  await pg.locator('.meat', { hasText: 'Gigot' }).first().click();
+  await pg.locator('.cuisson-btn', { hasText: 'Bien Cuit' }).click();
+  // Un seul retour : en correction, l'écran de saisie ramène droit à
+  // l'accueil, sans repasser par le pavé des tables.
+  await pg.locator('.topbar .btn-quiet').click();
+  await pg.waitForTimeout(400);
+  ok(await pg.locator('.newbar').count() > 0, 'le retour ramène à l’accueil');
+  ok(await pg.locator('.order', { hasText: `Table ${tableMod}` }).first().locator('.order-line').count() === lignesAvant,
+    'une correction abandonnée ne change rien');
 
   console.log('\n== Historique du jour ==');
   await pg.getByRole('button', { name: 'Historique du jour' }).click();
