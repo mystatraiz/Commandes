@@ -174,8 +174,9 @@ export default function Stats({ commandesEnCours, onRetour }) {
   const s = useMemo(() => {
     if (!historique) return null;
     const depuis = PERIODES.find((p) => p.id === periode).depuis();
-    // L'historique contient déjà les commandes en cours : pas de doublon à craindre.
-    return calculer(historique.filter((c) => c.creeeA >= depuis));
+    // Les commandes effacées par erreur de frappe sont écartées : elles
+    // fausseraient les volumes comme le temps de service.
+    return calculer(historique.filter((c) => c.creeeA >= depuis && c.statut !== 'annulee'));
   }, [historique, periode]);
 
   const maxGrillade = s?.classementGrillades[0]?.n || 0;

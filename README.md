@@ -28,8 +28,10 @@ au lieu de le chercher, et l'appui vaut choix — pas de validation séparée. L
 tables qui ont déjà une commande en cours portent une pastille avec leur
 nombre, ce qui permet de repérer une erreur de numéro avant d'aller plus loin.
 
-Les vingt-neuf tables tiennent à l'écran sans défiler, en portrait comme en
-paysage ; un test le vérifie à chaque exécution de la suite.
+Quatre tables par ligne, en touches larges. Les vingt-neuf tiennent à l'écran
+sans défiler, du petit téléphone à la tablette comme en paysage ; la hauteur
+des touches suit celle de l'écran, et un test le vérifie sur cinq formats à
+chaque exécution de la suite.
 
 **Étape 2 — les grillades.** Les pièces en deux colonnes, chacune cerclée du
 liseré de sa famille : rouge pour le bœuf, jaune pour les pièces d'exception,
@@ -50,6 +52,25 @@ par l'écran des couleurs.
 
 **Envoyer** ramène à l'accueil, où la commande vient s'inscrire sous les
 précédentes, chronomètre lancé.
+
+## Corriger une fausse manœuvre
+
+Deux filets, pour les deux erreurs les plus probables en plein service.
+
+**Une commande saisie par erreur** s'efface par un **appui long** sur sa carte,
+suivi d'une confirmation qui rappelle la table et le nombre de pièces — un
+appui bref ne déclenche rien, et le bouton « Servi » garde la main.
+
+**Une commande marquée servie par erreur** se récupère dans l'**historique du
+jour**, accessible par l'icône horloge en haut de l'accueil. On y retrouve
+toutes les commandes de la journée qui ont quitté le grill, servies comme
+effacées, avec un bouton « Remettre en cours ».
+
+Rien n'est jamais détruit : une commande effacée passe au statut « annulée ».
+Elle quitte le grill sur tous les téléphones, ne compte plus dans les
+statistiques, mais reste restaurable. Ce choix n'est pas qu'une commodité :
+une suppression de ligne ne se propagerait pas à un téléphone hors ligne,
+alors qu'un changement de statut suit la synchronisation habituelle.
 
 ## Dictée vocale
 
@@ -373,6 +394,7 @@ src/
     Saisie.jsx            étape 2 — grillades et cuissons
     Stats.jsx             statistiques et vue tableau
     Connexion.jsx         saisie du code d'accès
+    Historique.jsx        commandes du jour et restauration
   components/
     Toast.jsx             messages et annulation
     MajPWA.jsx            proposition de mise à jour

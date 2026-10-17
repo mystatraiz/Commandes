@@ -7,6 +7,7 @@ import Accueil from './screens/Accueil.jsx';
 import ChoixTable from './screens/ChoixTable.jsx';
 import Connexion from './screens/Connexion.jsx';
 import Dictee from './screens/Dictee.jsx';
+import Historique from './screens/Historique.jsx';
 import Saisie from './screens/Saisie.jsx';
 import Stats from './screens/Stats.jsx';
 import { dicteeDisponible } from './lib/micro.js';
@@ -233,6 +234,32 @@ export default function App() {
     allerAccueil();
   }, [allerAccueil]);
 
+  /* ---------------- Effacer et restaurer ---------------- */
+
+  /* Une commande effacée n'est pas détruite : elle passe en « annulée ».
+     Deux raisons. Elle reste restaurable depuis l'historique du jour, et une
+     suppression de ligne ne se propagerait pas aux téléphones hors ligne,
+     alors qu'un changement de statut suit la synchronisation habituelle. */
+  const effacer = useCallback(async (id) => {
+    const cmd = commandes.find((c) => c.id === id);
+    if (!cmd) return;
+    await enregistrer({ ...cmd, statut: 'annulee', servieA: Date.now() });
+    vibrer(22);
+    montrerToast(`Table ${cmd.table} effacée`, {
+      libelle: 'Annuler',
+      faire: () => enregistrer({ ...cmd, statut: 'en_cours', servieA: null }),
+    });
+  }, [commandes, montrerToast, enregistrer]);
+
+  const restaurer = useCallback(async (id) => {
+    const toutes = await db.toutesLesCommandes();
+    const cmd = toutes.find((c) => c.id === id);
+    if (!cmd) return;
+    await enregistrer({ ...cmd, statut: 'en_cours', servieA: null });
+    vibrer(18);
+    montrerToast(`Table ${cmd.table} remise en cours`);
+  }, [montrerToast, enregistrer]);
+
   /* ---------------- Commande servie ---------------- */
 
   const servir = useCallback(async (id) => {
@@ -273,7 +300,9 @@ export default function App() {
           onNouvelle={commencer}
           onDicter={dicteeDisponible ? dicter : null}
           onServir={servir}
+          onEffacer={effacer}
           onStats={() => pousser('stats')}
+          onHistorique={() => pousser('historique')}
         />
       )}
 
@@ -293,6 +322,10 @@ export default function App() {
       )}
 
       {ecran === 'dictee' && <Dictee onValider={reprendreDictee} onRetour={retour} />}
+
+      {ecran === 'historique' && (
+        <Historique onRestaurer={restaurer} onRetour={retour} rafraichir={commandes.length} />
+      )}
 
       {ecran === 'stats' && <Stats commandesEnCours={commandes} onRetour={retour} />}
 
